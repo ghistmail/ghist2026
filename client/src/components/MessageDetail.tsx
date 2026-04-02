@@ -1,0 +1,219 @@
+import { type Message } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ExternalLink, Copy, Check } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
+import DOMPurify from "dompurify";
+import { useState, useMemo } from "react";
+import { useToast } from "@/hooks/use-toast";
+
+interface MessageDetailProps {
+  message: Message;
+  onBack: () => void;
+}
+
+function extractOTP(text: string): string | null {
+  const patterns = [
+    /\b(\d{6})\b/,
+    /\b(\d{4})\b/,
+    /\b(\d{8})\b/,
+    /code[:\s]+(\d{4,8})/i,
+    /OTP[:\s]+(\d{4,8})/i,
+    /password[:\s]+(\d{4,8})/i,
+    /verification[:\s]+(\d{4,8})/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+function extractLinks(html: string): { href: string; text: string }[] {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  const links: { href: string; text: string }[] = [];
+  div.querySelectorAll("a[href]").forEach((a) => {
+    const href = a.getAttribute("href");
+    if (href && href.startsWith("http")) {
+      links.push({ href, text: a.textContent?.trim() || href });
+    }
+  });
+  return links;
+}
+
+export function MessageDetail({ message, onBack }: MessageDetailProps) {
+  const [otpCopied, setOtpCopied] = useState(false);
+  const { toast } = useToast();
+
+  const otp = useMemo(
+    () => extractOTP(message.subject + " " + message.textBody),
+    [message]
+  );
+
+  const sanitizedHtml = useMemo(() => {
+    if (!message.htmlBody) return null;
+
+    const clean = DOMPurify.sanitize(message.htmlBody, {
+      ALLOWED_TAGS: [
+        "div", "span", "p", "br", "h1", "h2", "h3", "h4", "h5", "h6",
+        "a", "strong", "b", "em", "i", "u", "ul", "ol", "li",
+        "table", "thead", "tbody", "tr", "td", "th",
+        "blockquote", "pre", "code", "hr",
+      ],
+      ALLOWED_ATTR: ["href", "target", "rel", "style", "class"],
+      FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input", "img"],
+      FORBID_ATTR: ["onclick", "onerror", "onload", "onmouseover"],
+      ADD_ATTR: ["target"],
+    });
+
+    // Force all links to open in new tab
+    const div = document.createElement("div");
+    div.innerHTML = clean;
+    div.querySelectorAll("a").forEach((a) => {
+      a.setAttribute("target", "_blank");
+      a.setAttribute("rel", "noopener noreferrer");
+    });
+
+    return div.innerHTML;
+  }, [message.htmlBody]);
+
+  const links = useMemo(
+    () => (message.htmlBody ? extractLinks(message.htmlBody) : []),
+    [message.htmlBody]
+  );
+
+  const handleCopyOTP = async () => {
+    if (!otp) return;
+    try {
+      await navigator.clipboard.writeText(otp);
+    } catch {
+      const t = document.createElement("textarea");
+      t.value = otp;
+      t.style.position = "fixed";
+      t.style.left = "-9999px";
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand("copy");
+      document.body.removeChild(t);
+    }
+    setOtpCopied(true);
+    toast({ title: "Code copied" });
+    setTimeout(() => setOtpCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex flex-col">
+      {/* Top bar */}
+      <div className="px-5 py-3 flex items-center gap-2 bg-secondary/40">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={onBack}
+          aria-label="Back to inbox"
+          data-testid="button-back"
+          className="w-7 h-7 rounded-full"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+        </Button>
+        <span className="text-xs text-muted-foreground font-body tracking-wide">Inbox</span>
+      </div>
+
+      {/* Message content */}
+      <div className="p-5 sm:p-7 space-y-5">
+        {/* Header: subject + meta */}
+        <div className="space-y-2">
+          <h2
+            className="font-display text-xl sm:text-2xl font-bold text-foreground leading-snug"
+            data-testid="text-subject"
+          >
+            {message.subject}
+          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 text-xs text-muted-foreground font-body">
+            <span>
+              From:{" "}
+              <span className="text-foreground font-medium">
+                {message.fromName ? `${message.fromName} <${message.from}>` : message.from}
+              </span>
+            </span>
+            <span className="hidden sm:inline text-border">·</span>
+            <span className="tabular-nums">
+              {format(new Date(message.receivedAt), "MMM d, yyyy 'at' h:mm a")}
+              {" · "}
+              {formatDistanceToNow(new Date(message.receivedAt), { addSuffix: true })}
+            </span>
+          </div>
+        </div>
+
+        {/* OTP highlight — editorial card with tonal bg */}
+        {otp && (
+          <div className="bg-secondary rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-body font-semibold tracking-[0.15em] uppercase text-muted-foreground mb-1.5">
+                Verification code detected
+              </p>
+              <p
+                className="font-mono text-2xl sm:text-3xl font-bold tracking-[0.25em] text-foreground"
+                data-testid="text-otp"
+              >
+                {otp}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleCopyOTP}
+              className="gap-1.5 shrink-0 h-8 px-3 text-xs"
+              data-testid="button-copy-otp"
+            >
+              {otpCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {otpCopied ? "Copied" : "Copy code"}
+            </Button>
+          </div>
+        )}
+
+        {/* Action links */}
+        {links.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-body font-semibold tracking-[0.15em] uppercase text-muted-foreground">
+              Links in this message
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {links.slice(0, 5).map((link, i) => (
+                <a
+                  key={i}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-primary bg-primary/8 px-2.5 py-1.5 rounded-lg no-underline hover:bg-primary/14 transition-colors font-body"
+                  data-testid={`link-action-${i}`}
+                >
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                  <span className="truncate max-w-[180px]">
+                    {link.text.length > 40 ? link.text.slice(0, 40) + "..." : link.text}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Email body — tonal shift, no border */}
+        <div className="pt-4">
+          {sanitizedHtml ? (
+            <div
+              className="email-html-content text-sm"
+              dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+              data-testid="text-email-body"
+            />
+          ) : (
+            <pre
+              className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed"
+              data-testid="text-email-body"
+            >
+              {message.textBody}
+            </pre>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
