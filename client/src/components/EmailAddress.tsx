@@ -122,7 +122,7 @@ export function EmailAddress({
           A burner inbox that<br className="hidden sm:block" /> <span style={{ fontWeight: 900, fontStyle: "italic", letterSpacing: "-0.02em" }}>vanishes</span> in 24 hours.
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground font-body">
-          No account, no trace.
+          No account, no tracking.
         </p>
       </div>
 
