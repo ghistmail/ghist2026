@@ -119,7 +119,7 @@ export function EmailAddress({
       {/* Hero copy */}
       <div className="space-y-4">
         <h1 className="font-display font-bold tracking-tight text-foreground leading-tight text-4xl sm:text-5xl md:text-6xl">
-          A burner inbox that<br className="hidden sm:block" /> vanishes in 24 hours.
+          A burner inbox that<br className="hidden sm:block" /> <span className="font-black">vanishes</span> in 24 hours.
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground font-body">
           No account, no trace.
