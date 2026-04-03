@@ -418,6 +418,13 @@ export async function registerRoutes(
 
     const messageId = req.params.messageId;
 
+    // If we already have the full body cached (i.e. it was opened before), serve from cache.
+    // This avoids re-fetching from providers that mark messages read and may not return them again.
+    const alreadyCached = await storage.getMessage(messageId);
+    if (alreadyCached && alreadyCached.isRead && alreadyCached.htmlBody) {
+      return res.json(alreadyCached);
+    }
+
     try {
       let result: any = null;
 

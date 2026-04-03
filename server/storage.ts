@@ -77,7 +77,9 @@ export class MemStorage implements IStorage {
   }
 
   async createMessage(insert: InsertMessage): Promise<Message> {
-    const id = randomUUID();
+    // Use the provider's own message ID so we can look it up by that same ID later.
+    // Fall back to a random UUID only if no id is provided.
+    const id = insert.id || randomUUID();
     const message: Message = { ...insert, id };
     this.messages.set(id, message);
     return message;

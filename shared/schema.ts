@@ -36,7 +36,9 @@ export const messageSchema = z.object({
   isRead: z.boolean(),
 });
 
-export const insertMessageSchema = messageSchema.omit({ id: true });
+// id is optional on insert — pass the provider's own ID to enable cache lookups;
+// if omitted, storage will generate a random UUID.
+export const insertMessageSchema = messageSchema.extend({ id: z.string().optional() });
 
 export type Message = z.infer<typeof messageSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
