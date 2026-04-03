@@ -184,13 +184,15 @@ function stripHtml(html: string): string {
   return html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
+    .replace(/<[^>]+>/g, " ")         // remove all tags
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
+    .replace(/&#\d+;/g, "")            // strip remaining numeric entities
+    .replace(/&[a-z]+;/gi, "")         // strip any remaining named entities
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -457,7 +459,7 @@ export async function registerRoutes(
           from: msg.mail_from || "",
           fromName: "",
           subject: msg.mail_subject || "(no subject)",
-          textBody: msg.mail_body || msg.mail_excerpt || "",
+          textBody: stripHtml(msg.mail_body || msg.mail_excerpt || ""),
           htmlBody: msg.mail_body || "",
           receivedAt: msg.mail_timestamp && msg.mail_timestamp > 0
             ? new Date(msg.mail_timestamp * 1000).toISOString()
@@ -480,7 +482,7 @@ export async function registerRoutes(
           from: msg.from?.address || "",
           fromName: msg.from?.name || "",
           subject: msg.subject || "(no subject)",
-          textBody: msg.text || msg.intro || "",
+          textBody: stripHtml(msg.text || msg.intro || ""),
           htmlBody: msg.html?.join("") || "",
           receivedAt: msg.createdAt || new Date().toISOString(),
           isRead: true,
@@ -493,7 +495,7 @@ export async function registerRoutes(
           from: msg.headerfrom || msg.sender || "",
           fromName: "",
           subject: msg.subject || "(no subject)",
-          textBody: msg.body || "",
+          textBody: stripHtml(msg.body || ""),
           htmlBody: msg.body || "",
           receivedAt: msg.date || new Date().toISOString(),
           isRead: true,
