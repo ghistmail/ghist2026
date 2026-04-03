@@ -179,6 +179,22 @@ setInterval(async () => {
 // ============================================================
 // Routes
 // ============================================================
+/** Strip HTML tags and decode common entities to get plain text */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -350,7 +366,7 @@ export async function registerRoutes(
           from: msg.mail_from || "",
           fromName: "",
           subject: msg.mail_subject || "(no subject)",
-          textBody: msg.mail_excerpt || "",
+          textBody: stripHtml(msg.mail_excerpt || ""),
           htmlBody: "",
           receivedAt: msg.mail_timestamp && msg.mail_timestamp > 0
             ? new Date(msg.mail_timestamp * 1000).toISOString()
@@ -371,7 +387,7 @@ export async function registerRoutes(
             from: msg.from?.address || "",
             fromName: msg.from?.name || "",
             subject: msg.subject || "(no subject)",
-            textBody: msg.intro || "",
+            textBody: stripHtml(msg.intro || ""),
             htmlBody: "",
             receivedAt: msg.createdAt || new Date().toISOString(),
             isRead: msg.seen || false,
@@ -385,7 +401,7 @@ export async function registerRoutes(
           from: msg.headerfrom || msg.sender || "",
           fromName: "",
           subject: msg.subject || "(no subject)",
-          textBody: msg.body || "",
+          textBody: stripHtml(msg.body || ""),
           htmlBody: "",
           receivedAt: msg.date || new Date().toISOString(),
           isRead: false,
