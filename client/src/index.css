@@ -389,3 +389,25 @@
 .email-html-content td, .email-html-content th {
   padding: 4px 8px;
 }
+
+/* Dark mode overrides for email body — make text readable on dark bg */
+.dark .email-html-content {
+  color: hsl(0 0% 80%);
+}
+.dark .email-html-content * {
+  color: inherit !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border-color: hsl(0 0% 25%) !important;
+}
+.dark .email-html-content a {
+  color: hsl(var(--primary)) !important;
+}
+.dark .email-html-content h1,
+.dark .email-html-content h2,
+.dark .email-html-content h3,
+.dark .email-html-content h4,
+.dark .email-html-content strong,
+.dark .email-html-content b {
+  color: hsl(0 0% 92%) !important;
+}

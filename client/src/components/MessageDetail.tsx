@@ -91,6 +91,24 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
       a.setAttribute("rel", "noopener noreferrer");
     });
 
+    // Strip any inline color/background-color styles from all elements so
+    // our dark-mode CSS override can take effect cleanly
+    div.querySelectorAll("[style]").forEach((el) => {
+      const s = el.getAttribute("style") || "";
+      const cleaned = s
+        .split(";")
+        .filter((rule) => {
+          const prop = rule.split(":")[0].trim().toLowerCase();
+          return prop !== "color" && prop !== "background-color" && prop !== "background";
+        })
+        .join(";");
+      if (cleaned.trim()) {
+        el.setAttribute("style", cleaned);
+      } else {
+        el.removeAttribute("style");
+      }
+    });
+
     return div.innerHTML;
   }, [message.htmlBody]);
 
