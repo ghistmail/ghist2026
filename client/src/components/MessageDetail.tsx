@@ -11,20 +11,37 @@ interface MessageDetailProps {
   onBack: () => void;
 }
 
+function isLikelyOTP(code: string): boolean {
+  if (/^(\d)\1+$/.test(code)) return false;
+  const digits = code.split("").map(Number);
+  const diffs = digits.slice(1).map((d, i) => d - digits[i]);
+  if (diffs.every((d) => d === 1) || diffs.every((d) => d === -1)) return false;
+  // Reject years — copyright footers, dates
+  const num = parseInt(code, 10);
+  if (code.length === 4 && num >= 1900 && num <= 2099) return false;
+  return true;
+}
+
 function extractOTP(text: string): string | null {
-  const patterns = [
-    /\b(\d{6})\b/,
-    /\b(\d{4})\b/,
-    /\b(\d{8})\b/,
-    /code[:\s]+(\d{4,8})/i,
-    /OTP[:\s]+(\d{4,8})/i,
-    /password[:\s]+(\d{4,8})/i,
-    /verification[:\s]+(\d{4,8})/i,
+  // Strip any HTML before scanning
+  const plain = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+  // Labelled patterns first — highest confidence
+  const labelledPatterns = [
+    /(?:code|OTP|otp|verification|passcode|one.?time)[\s:=]+(\d{4,8})/i,
+    /\b(\d{4,8})\s+(?:is your|as your)\s+(?:code|OTP|verification)/i,
   ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) return match[1];
+  for (const pattern of labelledPatterns) {
+    const match = plain.match(pattern);
+    if (match && isLikelyOTP(match[1])) return match[1];
   }
+
+  // Unlabelled: only 6 or 8 digits (4-digit too ambiguous — years, prices)
+  for (const pattern of [/\b(\d{6})\b/, /\b(\d{8})\b/]) {
+    const match = plain.match(pattern);
+    if (match && isLikelyOTP(match[1])) return match[1];
+  }
+
   return null;
 }
 

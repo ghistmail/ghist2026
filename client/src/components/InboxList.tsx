@@ -17,22 +17,25 @@ interface InboxListProps {
 }
 
 function isLikelyOTP(code: string): boolean {
-  // Reject all-same-digit codes like 000000, 111111, 999999 — these are HTML artifacts
+  // Reject all-same-digit codes like 000000, 111111
   if (/^(\d)\1+$/.test(code)) return false;
   // Reject sequential runs like 123456, 654321
   const digits = code.split("").map(Number);
   const diffs = digits.slice(1).map((d, i) => d - digits[i]);
   if (diffs.every((d) => d === 1) || diffs.every((d) => d === -1)) return false;
+  // Reject years (1900–2099) — copyright footers, dates, etc.
+  const num = parseInt(code, 10);
+  if (code.length === 4 && num >= 1900 && num <= 2099) return false;
   return true;
 }
 
 function extractOTP(text: string): string | null {
-  // Only run on plain text — strip any HTML tags first to avoid matching attribute values
+  // Strip any residual HTML tags first
   const plain = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
-  // Labelled patterns first (highest confidence)
+  // Labelled patterns — highest confidence, match 4–8 digit codes with a keyword nearby
   const labelledPatterns = [
-    /(?:code|OTP|otp|verification|passcode|password)[\s:=]+(\d{4,8})/i,
+    /(?:code|OTP|otp|verification|passcode|one.?time)[\s:=]+(\d{4,8})/i,
     /\b(\d{4,8})\s+(?:is your|as your)\s+(?:code|OTP|verification)/i,
   ];
   for (const pattern of labelledPatterns) {
@@ -40,8 +43,9 @@ function extractOTP(text: string): string | null {
     if (match && isLikelyOTP(match[1])) return match[1];
   }
 
-  // Unlabelled digit blocks — 6-digit first (most common OTP length), then 4/8
-  for (const pattern of [/\b(\d{6})\b/, /\b(\d{8})\b/, /\b(\d{4})\b/]) {
+  // Unlabelled digit blocks — only 6 or 8 digits (distinctive enough without a label)
+  // 4-digit codes are too ambiguous (years, prices, etc.) without a label
+  for (const pattern of [/\b(\d{6})\b/, /\b(\d{8})\b/]) {
     const match = plain.match(pattern);
     if (match && isLikelyOTP(match[1])) return match[1];
   }
