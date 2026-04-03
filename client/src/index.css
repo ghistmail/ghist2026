@@ -401,7 +401,7 @@
   border-color: hsl(0 0% 25%) !important;
 }
 .dark .email-html-content a {
-  color: hsl(var(--primary)) !important;
+  color: hsl(72 100% 50%) !important; /* keep lime — readable on dark bg */
 }
 .dark .email-html-content h1,
 .dark .email-html-content h2,
