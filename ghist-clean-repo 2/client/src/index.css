@@ -1,0 +1,391 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================
+   LIGHT MODE — "The Digital Gallery" editorial design system
+   Derived from screen.jpg reference
+   ========================================================== */
+:root {
+  --button-outline: rgba(0,0,0, .08);
+  --badge-outline: rgba(0,0,0, .04);
+  --opaque-button-border-intensity: -6;
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .06);
+
+  /* Surfaces — tonal layering, no borders */
+  --background: 240 11% 96.5%;       /* #F5F5F7 — Neutral */
+  --foreground: 0 0% 10%;            /* #1A1A1A — Secondary */
+
+  /* Cards / containers */
+  --card: 0 0% 100%;                 /* #ffffff — elevated pop */
+  --card-foreground: 0 0% 10%;
+  --card-border: 220 14% 93%;        /* subtle only */
+
+  /* Popover */
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --popover-border: 220 14% 90%;
+
+  /* Primary — #0052FF Electric Blue */
+  --primary: 221 100% 50%;           /* #0052FF */
+  --primary-foreground: 0 0% 100%;
+  --primary-border: hsl(221 100% 42%);
+
+  /* Secondary — surface-container-low */
+  --secondary: 220 18% 95%;          /* #f2f4f6 */
+  --secondary-foreground: 0 0% 10%;
+  --secondary-border: hsl(220 12% 88%);
+
+  /* Muted — surface-container */
+  --muted: 240 11% 93%;              /* matches neutral family */
+  --muted-foreground: 220 9% 43%;    /* #6b7280 */
+  --muted-border: hsl(220 12% 86%);
+
+  /* Accent — light lime tint for feature chips */
+  --accent: 72 60% 90%;              /* light lime tint from #CCFF00 */
+  --accent-foreground: 0 0% 10%;
+  --accent-border: hsl(72 40% 80%);
+
+  /* Destructive */
+  --destructive: 4 86% 58%;          /* #ef4444 */
+  --destructive-foreground: 0 0% 100%;
+  --destructive-border: hsl(4 80% 50%);
+
+  /* Input & ring */
+  --input: 220 14% 82%;
+  --border: 240 11% 91%;
+  --ring: 221 100% 50%;
+
+  /* Surface container tokens for bento/gallery sections */
+  --surface-container-low: 220 18% 95%;   /* #f2f4f6 */
+  --surface-container: 220 16% 91%;       /* #ebeef2 */
+  --surface-container-high: 220 14% 88%;  /* #e2e6eb */
+
+  /* Sidebar (reuse surface tokens) */
+  --sidebar: 220 18% 95%;
+  --sidebar-foreground: 232 35% 14%;
+  --sidebar-border: 220 14% 90%;
+  --sidebar-primary: 221 100% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 16% 91%;
+  --sidebar-accent-foreground: 0 0% 10%;
+  --sidebar-ring: 221 100% 50%;
+  --sidebar-primary-border: hsl(221 100% 42%);
+  --sidebar-accent-border: hsl(220 12% 84%);
+
+  /* Charts */
+  --chart-1: 221 100% 50%;
+  --chart-2: 262 50% 48%;
+  --chart-3: 142 50% 38%;
+  --chart-4: 43 74% 49%;
+  --chart-5: 27 80% 55%;
+
+  /* Typography */
+  --font-sans: "Satoshi", "Manrope", "Inter", sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", monospace;
+
+  /* Shape */
+  --radius: .5rem;
+
+  /* Ambient shadows — 4% opacity, large blur */
+  --shadow-2xs: 0px 1px 0px 0px hsl(232 35% 14% / 0.02);
+  --shadow-xs:  0px 2px 8px 0px hsl(232 35% 14% / 0.04);
+  --shadow-sm:  0px 4px 16px 0px hsl(232 35% 14% / 0.04);
+  --shadow:     0px 8px 32px 0px hsl(232 35% 14% / 0.05);
+  --shadow-md:  0px 12px 40px 0px hsl(232 35% 14% / 0.06);
+  --shadow-lg:  0px 20px 60px 0px hsl(232 35% 14% / 0.07);
+  --shadow-xl:  0px 32px 80px 0px hsl(232 35% 14% / 0.08);
+  --shadow-2xl: 0px 48px 100px 0px hsl(232 35% 14% / 0.10);
+
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+/* ==========================================================
+   DARK MODE — "The Digital Gallery" editorial design system
+   Derived from code.html reference
+   ========================================================== */
+.dark {
+  --button-outline: rgba(255,255,255, .10);
+  --badge-outline: rgba(255,255,255, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .09);
+
+  /* Surfaces */
+  --background: 0 0% 5.5%;           /* #0e0e0e — void black */
+  --foreground: 0 0% 100%;
+
+  /* Cards */
+  --card: 0 0% 7.5%;                 /* #131313 — container-low */
+  --card-foreground: 0 0% 100%;
+  --card-border: 0 0% 15%;
+
+  /* Popover */
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 100%;
+  --popover-border: 0 0% 17%;
+
+  /* Primary — #CCFF00 Electric Lime (Tertiary from palette) */
+  --primary: 72 100% 50%;            /* #CCFF00 */
+  --primary-foreground: 0 0% 6%;     /* near-black text on lime */
+  --primary-border: hsl(72 100% 43%);
+
+  /* Secondary — container */
+  --secondary: 0 0% 10%;             /* #1a1919 */
+  --secondary-foreground: 0 0% 100%;
+  --secondary-border: hsl(0 0% 13%);
+
+  /* Muted — container-high */
+  --muted: 0 0% 12.5%;               /* #201f1f */
+  --muted-foreground: 0 0% 67%;      /* #adaaaa */
+  --muted-border: hsl(0 0% 16%);
+
+  /* Accent — lime (same as primary in dark) */
+  --accent: 72 100% 50%;
+  --accent-foreground: 0 0% 6%;
+  --accent-border: hsl(72 100% 43%);
+
+  /* Destructive */
+  --destructive: 12 100% 66%;        /* #ff7351 */
+  --destructive-foreground: 0 0% 100%;
+  --destructive-border: hsl(12 100% 55%);
+
+  /* Input & ring */
+  --input: 0 0% 18%;
+  --border: 0 0% 15%;
+  --ring: 72 100% 50%;
+
+  /* Surface container tokens */
+  --surface-container-low: 0 0% 7.5%;
+  --surface-container: 0 0% 10%;
+  --surface-container-high: 0 0% 12.5%;
+
+  /* Sidebar */
+  --sidebar: 0 0% 7.5%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 15%;
+  --sidebar-primary: 72 100% 50%;
+  --sidebar-primary-foreground: 0 0% 6%;
+  --sidebar-accent: 0 0% 15%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 72 100% 50%;
+  --sidebar-primary-border: hsl(72 100% 43%);
+  --sidebar-accent-border: hsl(0 0% 18%);
+
+  /* Charts */
+  --chart-1: 72 100% 50%;
+  --chart-2: 262 60% 62%;
+  --chart-3: 142 45% 50%;
+  --chart-4: 43 74% 60%;
+  --chart-5: 27 80% 60%;
+
+  /* Ambient shadows — nearly invisible */
+  --shadow-2xs: 0px 1px 0px 0px hsl(0 0% 0% / 0.00);
+  --shadow-xs:  0px 2px 8px 0px hsl(0 0% 0% / 0.00);
+  --shadow-sm:  0px 4px 16px 0px hsl(0 0% 0% / 0.00);
+  --shadow:     0px 8px 32px 0px hsl(0 0% 0% / 0.00);
+  --shadow-md:  0px 12px 40px 0px hsl(0 0% 0% / 0.00);
+  --shadow-lg:  0px 20px 60px 0px hsl(0 0% 0% / 0.00);
+  --shadow-xl:  0px 32px 80px 0px hsl(0 0% 0% / 0.00);
+  --shadow-2xl: 0px 48px 100px 0px hsl(0 0% 0% / 0.00);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  .no-default-hover-elevate {}
+  .no-default-active-elevate {}
+
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: -1;
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: 999;
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+    inset: -1px;
+  }
+}
+
+/* ==========================================================
+   GHOST FLOAT ANIMATION
+   ========================================================== */
+@keyframes ghost-float {
+  0%, 100% {
+    transform: translateY(0px);
+    animation-timing-function: ease-in-out;
+  }
+  50% {
+    transform: translateY(-10px);
+    animation-timing-function: ease-in-out;
+  }
+}
+
+@keyframes shadow-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(0.55);
+    opacity: 0.08;
+  }
+}
+
+/* Address typing reveal animation */
+@keyframes char-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.address-reveal span {
+  display: inline-block;
+  opacity: 0;
+  animation: char-reveal 0.08s ease forwards;
+}
+
+/* Email card slide-in */
+@keyframes slide-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.email-card-enter {
+  animation: slide-in-top 0.2s ease forwards;
+}
+
+/* Pulse dot for live indicator */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.live-dot {
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+/* Urgent countdown pulse */
+@keyframes urgent-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.urgent-pulse {
+  animation: urgent-pulse 1.2s ease-in-out infinite;
+}
+
+/* Copy flash pulse on the address text */
+@keyframes copy-flash {
+  0% { opacity: 1; }
+  30% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.copy-flash {
+  animation: copy-flash 0.35s ease;
+}
+
+/* Sanitized email content styles */
+.email-html-content {
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  color: hsl(var(--foreground));
+  word-break: break-word;
+}
+.email-html-content img {
+  display: none;
+}
+.email-html-content a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.email-html-content a:hover {
+  opacity: 0.8;
+}
+.email-html-content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.email-html-content td, .email-html-content th {
+  padding: 4px 8px;
+}
