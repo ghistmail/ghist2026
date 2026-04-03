@@ -1,4 +1,4 @@
-import ghostImgPath from "@assets/ghist-ghost-transparent.png";
+const ghostImgPath = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUwAAAFvCAYAAAAhVvLH";
 
 /**
  * Animated floating ghost using the real ghost PNG.
