@@ -15,6 +15,7 @@ export interface IStorage {
   getMessages(mailboxId: string): Promise<Message[]>;
   getMessage(id: string): Promise<Message | undefined>;
   markRead(id: string): Promise<void>;
+  updateMessageBody(id: string, textBody: string, htmlBody: string): Promise<void>;
   deleteMessagesByMailbox(mailboxId: string): Promise<void>;
 }
 
@@ -96,6 +97,13 @@ export class MemStorage implements IStorage {
     const msg = this.messages.get(id);
     if (msg) {
       this.messages.set(id, { ...msg, isRead: true });
+    }
+  }
+
+  async updateMessageBody(id: string, textBody: string, htmlBody: string): Promise<void> {
+    const msg = this.messages.get(id);
+    if (msg) {
+      this.messages.set(id, { ...msg, textBody, htmlBody, isRead: true });
     }
   }
 

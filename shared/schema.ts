@@ -15,7 +15,7 @@ export const mailboxSchema = z.object({
   mailPassword: z.string().optional(),
   accountId: z.string().optional(),
   // Which provider is backing this mailbox
-  provider: z.enum(["guerrilla", "mailtm"]).optional(),
+  provider: z.enum(["guerrilla", "mailtm", "maildrop"]).optional(),
 });
 
 export const insertMailboxSchema = mailboxSchema.omit({ id: true });

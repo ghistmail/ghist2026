@@ -313,7 +313,7 @@ export async function registerRoutes(
     });
   });
 
-  // Get messages — proxied from the active provider
+  // Get messages — proxied from the active provider, cached in DB so read messages persist
   app.get("/api/mailbox/:token/messages", async (req: Request, res: Response) => {
     const mailbox = await storage.getMailboxByToken(req.params.token);
     if (!mailbox) {
@@ -323,11 +323,19 @@ export async function registerRoutes(
       return res.status(410).json({ error: "Mailbox has expired" });
     }
 
+    // Always load whatever we have cached in DB first
+    const cached = await storage.getMessages(mailbox.id);
+    const cachedIds = new Set(cached.map((m) => m.id));
+
     try {
+      let freshMessages: Array<{
+        id: string; mailboxId: string; from: string; fromName: string;
+        subject: string; textBody: string; htmlBody: string;
+        receivedAt: string; isRead: boolean;
+      }> = [];
+
       if (mailbox.provider === "guerrilla" && mailbox.sidToken) {
-        // Guerrilla Mail
         const rawMessages = await gmCheckEmail(mailbox.sidToken);
-        // Filter out Guerrilla Mail's automatic welcome message
         const filtered = rawMessages.filter((msg: any) => {
           const from = (msg.mail_from || "").toLowerCase();
           const subject = (msg.mail_subject || "").toLowerCase();
@@ -336,7 +344,7 @@ export async function registerRoutes(
           if (msg.mail_timestamp === 0 || msg.mail_timestamp === "0") return false;
           return true;
         });
-        const messages = filtered.map((msg: any) => ({
+        freshMessages = filtered.map((msg: any) => ({
           id: String(msg.mail_id),
           mailboxId: mailbox.id,
           from: msg.mail_from || "",
@@ -349,33 +357,29 @@ export async function registerRoutes(
             : new Date().toISOString(),
           isRead: msg.mail_read === 1,
         }));
-        return res.json(messages);
       } else if (mailbox.provider === "mailtm") {
-        // mail.tm
         let token = mailbox.mailToken;
         if (!token && mailbox.mailPassword) {
           token = await mtGetToken(mailbox.address, mailbox.mailPassword);
           await storage.updateMailToken(mailbox.id, token);
         }
-        if (!token) return res.json([]);
-
-        const rawMessages = await mtFetchMessages(token);
-        const messages = rawMessages.map((msg: any) => ({
-          id: msg.id,
-          mailboxId: mailbox.id,
-          from: msg.from?.address || "",
-          fromName: msg.from?.name || "",
-          subject: msg.subject || "(no subject)",
-          textBody: msg.intro || "",
-          htmlBody: "",
-          receivedAt: msg.createdAt || new Date().toISOString(),
-          isRead: msg.seen || false,
-        }));
-        return res.json(messages);
+        if (token) {
+          const rawMessages = await mtFetchMessages(token);
+          freshMessages = rawMessages.map((msg: any) => ({
+            id: msg.id,
+            mailboxId: mailbox.id,
+            from: msg.from?.address || "",
+            fromName: msg.from?.name || "",
+            subject: msg.subject || "(no subject)",
+            textBody: msg.intro || "",
+            htmlBody: "",
+            receivedAt: msg.createdAt || new Date().toISOString(),
+            isRead: msg.seen || false,
+          }));
+        }
       } else if (mailbox.provider === "maildrop" && mailbox.sidToken) {
-        // Maildrop — sidToken stores the local part
         const rawMessages = await mdFetchMessages(mailbox.sidToken);
-        const messages = rawMessages.map((msg: any) => ({
+        freshMessages = rawMessages.map((msg: any) => ({
           id: String(msg.id),
           mailboxId: mailbox.id,
           from: msg.headerfrom || msg.sender || "",
@@ -386,33 +390,45 @@ export async function registerRoutes(
           receivedAt: msg.date || new Date().toISOString(),
           isRead: false,
         }));
-        return res.json(messages);
       }
 
-      res.json([]);
+      // Cache any new messages we haven't seen before
+      for (const msg of freshMessages) {
+        if (!cachedIds.has(msg.id)) {
+          await storage.createMessage(msg);
+        }
+      }
+
+      // Return the full DB set (includes read messages that providers no longer return)
+      const allMessages = await storage.getMessages(mailbox.id);
+      return res.json(allMessages);
     } catch (err: any) {
       console.error("Fetch messages error:", err.message);
-      res.json([]);
+      // On provider error, still return cached messages so inbox doesn't go blank
+      return res.json(cached);
     }
   });
 
-  // Get single message — full body from the active provider
+  // Get single message — full body from provider, falls back to DB cache, marks as read
   app.get("/api/message/:token/:messageId", async (req: Request, res: Response) => {
     const mailbox = await storage.getMailboxByToken(req.params.token);
     if (!mailbox) {
       return res.status(404).json({ error: "Mailbox not found" });
     }
 
+    const messageId = req.params.messageId;
+
     try {
+      let result: any = null;
+
       if (mailbox.provider === "guerrilla" && mailbox.sidToken) {
-        const msg = await gmFetchEmail(mailbox.sidToken, req.params.messageId);
-        // Block Guerrilla Mail welcome message
+        const msg = await gmFetchEmail(mailbox.sidToken, messageId);
         const from = (msg.mail_from || "").toLowerCase();
         const subject = (msg.mail_subject || "").toLowerCase();
         if (from.includes("guerrillamail") || from.includes("grr.la") || subject.includes("welcome to guerrilla") || msg.mail_timestamp === 0 || msg.mail_timestamp === "0") {
           return res.status(404).json({ error: "Message not found" });
         }
-        return res.json({
+        result = {
           id: String(msg.mail_id),
           mailboxId: mailbox.id,
           from: msg.mail_from || "",
@@ -424,7 +440,7 @@ export async function registerRoutes(
             ? new Date(msg.mail_timestamp * 1000).toISOString()
             : new Date().toISOString(),
           isRead: true,
-        });
+        };
       } else if (mailbox.provider === "mailtm") {
         let token = mailbox.mailToken;
         if (!token && mailbox.mailPassword) {
@@ -434,9 +450,8 @@ export async function registerRoutes(
         if (!token) {
           return res.status(404).json({ error: "Cannot retrieve message" });
         }
-
-        const msg = await mtFetchMessage(token, req.params.messageId);
-        return res.json({
+        const msg = await mtFetchMessage(token, messageId);
+        result = {
           id: msg.id,
           mailboxId: mailbox.id,
           from: msg.from?.address || "",
@@ -446,10 +461,10 @@ export async function registerRoutes(
           htmlBody: msg.html?.join("") || "",
           receivedAt: msg.createdAt || new Date().toISOString(),
           isRead: true,
-        });
+        };
       } else if (mailbox.provider === "maildrop" && mailbox.sidToken) {
-        const msg = await mdFetchMessage(mailbox.sidToken, req.params.messageId);
-        return res.json({
+        const msg = await mdFetchMessage(mailbox.sidToken, messageId);
+        result = {
           id: String(msg.id),
           mailboxId: mailbox.id,
           from: msg.headerfrom || msg.sender || "",
@@ -459,12 +474,28 @@ export async function registerRoutes(
           htmlBody: msg.body || "",
           receivedAt: msg.date || new Date().toISOString(),
           isRead: true,
-        });
+        };
       }
 
-      res.status(404).json({ error: "Unknown provider" });
+      if (!result) {
+        return res.status(404).json({ error: "Unknown provider" });
+      }
+
+      // Update the DB cache with full body + mark as read
+      const existing = await storage.getMessage(messageId);
+      if (existing) {
+        await storage.updateMessageBody(messageId, result.textBody, result.htmlBody);
+      } else {
+        // First time seeing this message — cache it
+        await storage.createMessage(result);
+      }
+
+      return res.json(result);
     } catch (err: any) {
       console.error("Fetch message error:", err.message);
+      // Fallback: return cached version if we have it
+      const cached = await storage.getMessage(messageId);
+      if (cached) return res.json(cached);
       res.status(404).json({ error: "Message not found" });
     }
   });
