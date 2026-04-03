@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { type Message } from "@shared/schema";
-import { Mail, MailOpen } from "lucide-react";
+import { Mail, MailOpen, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { GhostLogo } from "./GhostLogo";
 
@@ -12,6 +12,8 @@ interface InboxListProps {
   lastChecked?: number;
   /** Whether currently fetching */
   isFetching?: boolean;
+  /** Manual refresh callback */
+  onRefresh?: () => void;
 }
 
 function extractOTP(text: string): string | null {
@@ -142,6 +144,7 @@ export function InboxList({
   onSelect,
   lastChecked,
   isFetching,
+  onRefresh,
 }: InboxListProps) {
   const checkedLabel = useLastCheckedLabel(lastChecked);
   const prevIdsRef = useRef<Set<string>>(new Set());
@@ -173,11 +176,25 @@ export function InboxList({
             {isFetching ? "Checking for new mail…" : checkedLabel ? `Checked ${checkedLabel}` : "Auto-refreshing"}
           </span>
         </div>
-        {messages.length > 0 && (
-          <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-body font-semibold tabular-nums">
-            {messages.length}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-body font-semibold tabular-nums">
+              {messages.length}
+            </span>
+          )}
+          <button
+            onClick={onRefresh}
+            disabled={isFetching}
+            aria-label="Refresh inbox"
+            data-testid="button-refresh-inbox"
+            className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
+              strokeWidth={1.8}
+            />
+          </button>
+        </div>
       </div>
 
       {empty ? (

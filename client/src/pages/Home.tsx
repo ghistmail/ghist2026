@@ -57,6 +57,7 @@ export default function Home() {
     isLoading: messagesLoading,
     isFetching: messagesFetching,
     dataUpdatedAt,
+    refetch: refetchMessages,
   } = useQuery<Message[]>({
     queryKey: ["/api/mailbox", sessionToken, "messages"],
     queryFn: async () => {
@@ -273,6 +274,7 @@ export default function Home() {
                         onSelect={handleSelectMessage}
                         lastChecked={lastChecked}
                         isFetching={messagesFetching}
+                        onRefresh={refetchMessages}
                       />
                     )}
                   </div>
@@ -299,6 +301,7 @@ export default function Home() {
                       onSelect={handleSelectMessage}
                       lastChecked={lastChecked}
                       isFetching={messagesFetching}
+                      onRefresh={refetchMessages}
                     />
                   )}
                 </>
