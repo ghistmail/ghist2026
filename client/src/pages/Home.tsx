@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type Mailbox, type Message } from "@shared/schema";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { EmailAddress } from "@/components/EmailAddress";
-import { InboxList } from "@/components/InboxList";
+import { InboxList, EmailCardSkeleton } from "@/components/InboxList";
 import { MessageDetail } from "@/components/MessageDetail";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Plus, AlertTriangle, Shield, Clock, Mail, Lock, EyeOff } from "lucide-react";
-import ghistLogoPath from "@assets/ghist-logo.png";
+import { Plus, AlertTriangle, Shield, Clock, Mail, Lock, EyeOff, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GhostLogo } from "@/components/GhostLogo";
 
 // Session token stored in memory (no localStorage in sandbox)
 let sessionToken: string | null = null;
@@ -18,6 +18,9 @@ let sessionToken: string | null = null;
 export default function Home() {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
+  const [lastChecked, setLastChecked] = useState<number | undefined>(undefined);
+  // Mobile bottom-sheet state
+  const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
 
   // Create mailbox mutation
   const createMailbox = useMutation({
@@ -29,16 +32,14 @@ export default function Home() {
       sessionToken = data.sessionToken;
       setSelectedMessageId(null);
       setExpired(false);
+      setBottomSheetOpen(false);
       queryClient.setQueryData(["/api/mailbox", sessionToken], data);
       queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionToken, "messages"] });
     },
   });
 
   // Get current mailbox
-  const {
-    data: mailbox,
-    isLoading: mailboxLoading,
-  } = useQuery<Mailbox>({
+  const { data: mailbox, isLoading: mailboxLoading } = useQuery<Mailbox>({
     queryKey: ["/api/mailbox", sessionToken],
     queryFn: async () => {
       if (!sessionToken) throw new Error("No session");
@@ -55,6 +56,7 @@ export default function Home() {
     data: messages = [],
     isLoading: messagesLoading,
     isFetching: messagesFetching,
+    dataUpdatedAt,
   } = useQuery<Message[]>({
     queryKey: ["/api/mailbox", sessionToken, "messages"],
     queryFn: async () => {
@@ -66,7 +68,12 @@ export default function Home() {
     refetchInterval: 10000,
   });
 
-  // Get selected message detail — uses session token in URL
+  // Track last checked timestamp
+  useEffect(() => {
+    if (dataUpdatedAt) setLastChecked(dataUpdatedAt);
+  }, [dataUpdatedAt]);
+
+  // Get selected message detail
   const { data: selectedMessage } = useQuery<Message>({
     queryKey: ["/api/message", sessionToken, selectedMessageId],
     queryFn: async () => {
@@ -87,6 +94,7 @@ export default function Home() {
       sessionToken = null;
       setSelectedMessageId(null);
       setExpired(false);
+      setBottomSheetOpen(false);
       queryClient.clear();
     },
   });
@@ -110,7 +118,17 @@ export default function Home() {
     setExpired(true);
   }, []);
 
-  const handleRefresh = useCallback(() => {
+  const handleSelectMessage = useCallback((id: string) => {
+    setSelectedMessageId(id);
+    // On mobile, open bottom sheet
+    if (window.innerWidth < 768) {
+      setBottomSheetOpen(true);
+    }
+  }, []);
+
+  const handleCloseMessage = useCallback(() => {
+    setSelectedMessageId(null);
+    setBottomSheetOpen(false);
     queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionToken, "messages"] });
   }, []);
 
@@ -127,8 +145,7 @@ export default function Home() {
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground mb-2">Session expired</h2>
               <p className="text-sm text-muted-foreground font-body leading-relaxed">
-                This inbox and all messages have been permanently deleted.
-                No data can be recovered.
+                This inbox and all messages have been permanently deleted. No data can be recovered.
               </p>
             </div>
             <Button
@@ -185,24 +202,22 @@ export default function Home() {
 
       <main className="flex-1 w-full">
         {/* ── Hero zone ──────────────────────────────────────────── */}
-        <section className="bg-background px-5 sm:px-8 pt-10 pb-4 sm:pt-14 sm:pb-6">
-          <div className="max-w-5xl mx-auto">
-            {/* Hero copy — high-impact value proposition */}
-            <div className="mb-8 sm:mb-10 max-w-2xl">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-snug mb-3">
-                Your real inbox, protected.
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground font-body leading-relaxed">
-                Ghist gives you free, anonymous, disposable email addresses — secure and instant.
-              </p>
-            </div>
-
+        <section className="bg-background px-5 sm:px-8 pt-12 pb-10 sm:pt-16 sm:pb-14">
+          <div className="max-w-3xl mx-auto flex flex-col items-center">
             {isLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-3 w-28" />
-                <Skeleton className="h-12 w-3/4" />
-                <Skeleton className="h-9 w-56" />
-                <Skeleton className="h-8 w-40" />
+              <div className="flex flex-col items-center gap-6 w-full">
+                <div className="space-y-4 text-center w-full">
+                  <Skeleton className="h-12 w-3/4 mx-auto" />
+                  <Skeleton className="h-12 w-2/3 mx-auto" />
+                  <Skeleton className="h-6 w-40 mx-auto" />
+                </div>
+                <div className="w-full max-w-2xl space-y-3">
+                  <Skeleton className="h-16 w-full rounded-2xl" />
+                  <div className="flex justify-between px-1">
+                    <Skeleton className="h-5 w-36" />
+                    <Skeleton className="h-5 w-28" />
+                  </div>
+                </div>
               </div>
             ) : mailbox ? (
               <EmailAddress
@@ -218,71 +233,83 @@ export default function Home() {
         </section>
 
         {/* ── Inbox section ─────────────────────────────────────── */}
-        <section className="bg-background px-5 sm:px-8 py-6">
-          <div className="max-w-5xl mx-auto">
-            {/* Inbox header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <h2 className="font-display text-base font-semibold text-foreground">
-                  Inbox
-                </h2>
-                {messages.length > 0 && (
-                  <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-body font-semibold tabular-nums">
-                    {messages.length}
-                  </span>
-                )}
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleRefresh}
-                disabled={messagesFetching}
-                aria-label="Refresh inbox"
-                data-testid="button-refresh"
-                className="w-7 h-7 rounded-full"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${messagesFetching ? "animate-spin" : ""}`} />
-              </Button>
+        <section className="bg-background px-5 sm:px-8 py-4">
+          <div className="max-w-3xl mx-auto">
+            {/* Inbox label */}
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="font-display text-base font-semibold text-foreground">Inbox</h2>
             </div>
 
-            {/* Inbox card — tonal background, no border */}
+            {/* Inbox card */}
             <div className="bg-card rounded-2xl overflow-hidden">
+              {/* Desktop: show message detail inline */}
               {selectedMessageId && selectedMessage ? (
-                <MessageDetail
-                  message={selectedMessage}
-                  onBack={() => {
-                    setSelectedMessageId(null);
-                    queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionToken, "messages"] });
-                  }}
-                />
-              ) : messagesLoading ? (
-                <div className="p-5 space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-start gap-3.5">
-                      <Skeleton className="w-4 h-4 mt-1 rounded-md" />
-                      <div className="flex-1 space-y-1.5">
-                        <Skeleton className="h-3.5 w-32" />
-                        <Skeleton className="h-3.5 w-48" />
-                        <Skeleton className="h-3 w-64" />
+                <>
+                  {/* Desktop inline detail */}
+                  <div className="hidden md:block">
+                    <MessageDetail
+                      message={selectedMessage}
+                      onBack={handleCloseMessage}
+                    />
+                  </div>
+                  {/* Mobile: show inbox list (detail is in bottom-sheet) */}
+                  <div className="md:hidden">
+                    {messagesLoading ? (
+                      <div>
+                        <div className="px-5 pt-3 pb-2 border-b border-border/40">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
+                            <span className="text-[11px] text-muted-foreground font-body">Loading…</span>
+                          </div>
+                        </div>
+                        <EmailCardSkeleton />
+                        <EmailCardSkeleton />
+                        <EmailCardSkeleton />
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ) : (
+                      <InboxList
+                        messages={messages}
+                        selectedId={selectedMessageId}
+                        onSelect={handleSelectMessage}
+                        lastChecked={lastChecked}
+                        isFetching={messagesFetching}
+                      />
+                    )}
+                  </div>
+                </>
               ) : (
-                <InboxList
-                  messages={messages}
-                  selectedId={selectedMessageId}
-                  onSelect={setSelectedMessageId}
-                />
+                /* No message selected — show inbox list on all screen sizes */
+                <>
+                  {messagesLoading ? (
+                    <div>
+                      <div className="px-5 pt-3 pb-2 border-b border-border/40">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
+                          <span className="text-[11px] text-muted-foreground font-body">Loading…</span>
+                        </div>
+                      </div>
+                      <EmailCardSkeleton />
+                      <EmailCardSkeleton />
+                      <EmailCardSkeleton />
+                    </div>
+                  ) : (
+                    <InboxList
+                      messages={messages}
+                      selectedId={selectedMessageId}
+                      onSelect={handleSelectMessage}
+                      lastChecked={lastChecked}
+                      isFetching={messagesFetching}
+                    />
+                  )}
+                </>
               )}
             </div>
           </div>
         </section>
 
-
-        {/* Privacy notice (directly under inbox) */}
+        {/* ── Privacy notice ────────────────────────────────────── */}
         <section className="bg-muted/10 px-5 sm:px-8 py-5">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <div className="flex items-start gap-3">
               <EyeOff className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" strokeWidth={1.5} />
               <p className="text-[11px] text-muted-foreground font-body leading-relaxed">
@@ -292,19 +319,18 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Why Ghist */}
+        {/* ── Why Ghist ─────────────────────────────────────────── */}
         <section className="bg-background px-5 sm:px-8 py-10">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <div className="mb-6">
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">
                 Why Ghist
               </p>
               <p className="text-base sm:text-lg font-display font-semibold text-foreground max-w-lg">
-                Your privacy shouldn’t be a premium feature.
+                Your privacy shouldn't be a premium feature.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Stay Anonymous */}
               <div className="bg-card rounded-xl p-5 space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -317,7 +343,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Built to Expire */}
               <div className="bg-card rounded-xl p-5 space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -330,7 +355,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Secure by Design */}
               <div className="bg-card rounded-xl p-5 space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -350,9 +374,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Perfect For */}
+        {/* ── Perfect For ────────────────────────────────────────── */}
         <section className="bg-muted/20 px-5 sm:px-8 py-10">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <div className="mb-6">
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">
                 Perfect For
@@ -373,11 +397,46 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-
       </main>
 
       <Footer />
+
+      {/* ── Mobile bottom-sheet for email detail ─────────────────── */}
+      {bottomSheetOpen && selectedMessage && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+          {/* Scrim */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={handleCloseMessage}
+            aria-hidden="true"
+          />
+          {/* Sheet */}
+          <div
+            className="relative bg-card rounded-t-3xl overflow-hidden flex flex-col"
+            style={{ maxHeight: "88vh" }}
+          >
+            {/* Handle + close */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/40 shrink-0">
+              <div className="w-10 h-1 bg-border rounded-full mx-auto" />
+              <button
+                onClick={handleCloseMessage}
+                className="absolute right-4 top-4 w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary transition-colors"
+                aria-label="Close email"
+                data-testid="button-close-email-sheet"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+            {/* Scrollable content */}
+            <div className="overflow-y-auto flex-1">
+              <MessageDetail
+                message={selectedMessage}
+                onBack={handleCloseMessage}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

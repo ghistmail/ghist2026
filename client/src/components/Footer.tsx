@@ -1,4 +1,4 @@
-import ghistLogoPath from "@assets/ghist-logo.png";
+import { GhistLogoFull } from "./GhostLogo";
 
 export function Footer() {
   return (
@@ -8,12 +8,7 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8 mb-8">
           {/* Brand block */}
           <div className="flex flex-col gap-3">
-            <img
-              src={ghistLogoPath}
-              alt="Ghist"
-              className="h-5 w-auto object-contain dark:invert opacity-50"
-              style={{ maxWidth: "80px" }}
-            />
+            <GhistLogoFull size={22} animated={false} className="opacity-60" />
             <p className="text-xs text-muted-foreground font-body leading-relaxed max-w-[280px]">
               Communication without the digital footprint. Ephemeral by design.
             </p>
@@ -22,11 +17,9 @@ export function Footer() {
 
         {/* Bottom row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <p className="text-[11px] text-muted-foreground/70 font-body">
-              All data auto-deleted after 24 hours. No signup, no tracking.
-            </p>
-          </div>
+          <p className="text-[11px] text-muted-foreground/70 font-body">
+            All data auto-deleted after 24 hours. No signup, no tracking.
+          </p>
           <p className="text-[11px] text-muted-foreground/60 font-body">
             Created by Alex Wain
           </p>

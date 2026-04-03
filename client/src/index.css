@@ -82,9 +82,9 @@
   --chart-5: 27 80% 55%;
 
   /* Typography */
-  --font-sans: "Manrope", "Inter", sans-serif;
+  --font-sans: "Satoshi", "Manrope", "Inter", sans-serif;
   --font-serif: Georgia, serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-mono: "Geist Mono", "JetBrains Mono", monospace;
 
   /* Shape */
   --radius: .5rem;
@@ -272,6 +272,96 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+}
+
+/* ==========================================================
+   GHOST FLOAT ANIMATION
+   ========================================================== */
+@keyframes ghost-float {
+  0%, 100% {
+    transform: translateY(0px);
+    animation-timing-function: ease-in-out;
+  }
+  50% {
+    transform: translateY(-10px);
+    animation-timing-function: ease-in-out;
+  }
+}
+
+@keyframes shadow-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(0.55);
+    opacity: 0.08;
+  }
+}
+
+/* Address typing reveal animation */
+@keyframes char-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.address-reveal span {
+  display: inline-block;
+  opacity: 0;
+  animation: char-reveal 0.08s ease forwards;
+}
+
+/* Email card slide-in */
+@keyframes slide-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.email-card-enter {
+  animation: slide-in-top 0.2s ease forwards;
+}
+
+/* Pulse dot for live indicator */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.live-dot {
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+/* Urgent countdown pulse */
+@keyframes urgent-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.urgent-pulse {
+  animation: urgent-pulse 1.2s ease-in-out infinite;
+}
+
+/* Copy flash pulse on the address text */
+@keyframes copy-flash {
+  0% { opacity: 1; }
+  30% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.copy-flash {
+  animation: copy-flash 0.35s ease;
 }
 
 /* Sanitized email content styles */

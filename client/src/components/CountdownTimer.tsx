@@ -8,6 +8,7 @@ interface CountdownTimerProps {
 export function CountdownTimer({ expiresAt, onExpired }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState("");
   const [isUrgent, setIsUrgent] = useState(false);
+  const [expired, setExpired] = useState(false);
 
   useEffect(() => {
     function update() {
@@ -18,6 +19,7 @@ export function CountdownTimer({ expiresAt, onExpired }: CountdownTimerProps) {
       if (diff <= 0) {
         setTimeLeft("Expired");
         setIsUrgent(true);
+        setExpired(true);
         onExpired?.();
         return;
       }
@@ -25,11 +27,16 @@ export function CountdownTimer({ expiresAt, onExpired }: CountdownTimerProps) {
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
+      const urgent = diff < 3600000; // under 1 hour
+      setIsUrgent(urgent);
 
-      setTimeLeft(
-        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-      );
-      setIsUrgent(diff < 3600000); // under 1 hour
+      if (urgent) {
+        // Show mm:ss when under 1 hour for precision
+        setTimeLeft(`${minutes.toString().padStart(2, "0")}m ${seconds.toString().padStart(2, "0")}s`);
+      } else {
+        // Human-readable: "23h 47m"
+        setTimeLeft(`${hours}h ${minutes.toString().padStart(2, "0")}m`);
+      }
     }
 
     update();
@@ -37,7 +44,7 @@ export function CountdownTimer({ expiresAt, onExpired }: CountdownTimerProps) {
     return () => clearInterval(interval);
   }, [expiresAt, onExpired]);
 
-  if (timeLeft === "Expired") {
+  if (expired) {
     return (
       <span
         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide uppercase bg-destructive/10 text-destructive"
@@ -51,16 +58,18 @@ export function CountdownTimer({ expiresAt, onExpired }: CountdownTimerProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide tabular-nums ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide tabular-nums font-body ${
         isUrgent
-          ? "bg-destructive/10 text-destructive"
+          ? "bg-destructive/10 text-destructive urgent-pulse"
           : "bg-secondary text-muted-foreground"
       }`}
       data-testid="text-countdown"
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${
-        isUrgent ? "bg-destructive animate-pulse" : "bg-primary"
-      }`} />
+      <span
+        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+          isUrgent ? "bg-destructive animate-pulse" : "bg-primary"
+        }`}
+      />
       Expires in {timeLeft}
     </span>
   );

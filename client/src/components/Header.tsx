@@ -2,7 +2,7 @@ import { useTheme } from "./ThemeProvider";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
 import { Link } from "wouter";
-import ghistLogoPath from "@assets/ghist-logo.png";
+import { GhistLogoFull } from "./GhostLogo";
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
@@ -22,14 +22,9 @@ export function Header() {
       }}
     >
       <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4">
-        {/* Logo + brand */}
-        <Link href="/" className="flex items-center no-underline group">
-          <img
-            src={ghistLogoPath}
-            alt="Ghist"
-            className="h-6 sm:h-7 w-auto object-contain dark:invert transition-opacity group-hover:opacity-80"
-            data-testid="text-brand"
-          />
+        {/* Animated ghost + wordmark — left on desktop, will be part of centred hero on mobile */}
+        <Link href="/" className="flex items-center no-underline" data-testid="text-brand">
+          <GhistLogoFull size={28} animated={true} />
         </Link>
 
         {/* Nav right */}
@@ -55,7 +50,6 @@ export function Header() {
             </Button>
           </Link>
 
-          {/* Divider */}
           <div className="w-px h-4 bg-border/60 mx-1 hidden sm:block" />
 
           <Button
