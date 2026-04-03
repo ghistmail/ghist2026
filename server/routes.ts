@@ -104,6 +104,31 @@ async function mtDeleteAccount(token: string, accountId: string): Promise<void> 
 }
 
 // ============================================================
+// Maildrop API (second fallback — no account needed, just pick a name)
+// ============================================================
+const MAILDROP_API = "https://maildrop.cc/api";
+
+function randomMaildropLocal(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz";
+  let result = "";
+  for (let i = 0; i < 12; i++) result += chars[Math.floor(Math.random() * chars.length)];
+  return result;
+}
+
+async function mdFetchMessages(local: string): Promise<any[]> {
+  const res = await fetch(`${MAILDROP_API}/mailbox/${local}`);
+  if (!res.ok) return [];
+  const data = await res.json() as any;
+  return Array.isArray(data) ? data : [];
+}
+
+async function mdFetchMessage(local: string, messageId: string): Promise<any> {
+  const res = await fetch(`${MAILDROP_API}/mailbox/${local}/${messageId}`);
+  if (!res.ok) throw new Error("Message not found");
+  return res.json();
+}
+
+// ============================================================
 // Helpers
 // ============================================================
 function randomLocal(): string {
@@ -230,6 +255,33 @@ export async function registerRoutes(
       console.error("mail.tm also failed:", mtErr.message);
     }
 
+    // Second fallback: Maildrop (no account creation needed)
+    try {
+      const local = randomMaildropLocal();
+      const address = `${local}@maildrop.cc`;
+
+      const mailbox = await storage.createMailbox({
+        address,
+        domain: "maildrop.cc",
+        createdAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        sessionToken,
+        sidToken: local, // reuse sidToken field to store the local part
+        provider: "maildrop",
+      });
+
+      return res.json({
+        id: mailbox.id,
+        address: mailbox.address,
+        domain: mailbox.domain,
+        createdAt: mailbox.createdAt,
+        expiresAt: mailbox.expiresAt,
+        sessionToken: mailbox.sessionToken,
+      });
+    } catch (mdErr: any) {
+      console.error("Maildrop also failed:", mdErr.message);
+    }
+
     res.status(422).json({ error: "Failed to create mailbox. Please try again." });
   });
 
@@ -320,6 +372,21 @@ export async function registerRoutes(
           isRead: msg.seen || false,
         }));
         return res.json(messages);
+      } else if (mailbox.provider === "maildrop" && mailbox.sidToken) {
+        // Maildrop — sidToken stores the local part
+        const rawMessages = await mdFetchMessages(mailbox.sidToken);
+        const messages = rawMessages.map((msg: any) => ({
+          id: String(msg.id),
+          mailboxId: mailbox.id,
+          from: msg.headerfrom || msg.sender || "",
+          fromName: "",
+          subject: msg.subject || "(no subject)",
+          textBody: msg.body || "",
+          htmlBody: "",
+          receivedAt: msg.date || new Date().toISOString(),
+          isRead: false,
+        }));
+        return res.json(messages);
       }
 
       res.json([]);
@@ -378,6 +445,19 @@ export async function registerRoutes(
           textBody: msg.text || msg.intro || "",
           htmlBody: msg.html?.join("") || "",
           receivedAt: msg.createdAt || new Date().toISOString(),
+          isRead: true,
+        });
+      } else if (mailbox.provider === "maildrop" && mailbox.sidToken) {
+        const msg = await mdFetchMessage(mailbox.sidToken, req.params.messageId);
+        return res.json({
+          id: String(msg.id),
+          mailboxId: mailbox.id,
+          from: msg.headerfrom || msg.sender || "",
+          fromName: "",
+          subject: msg.subject || "(no subject)",
+          textBody: msg.body || "",
+          htmlBody: msg.body || "",
+          receivedAt: msg.date || new Date().toISOString(),
           isRead: true,
         });
       }
