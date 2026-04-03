@@ -16,20 +16,36 @@ interface InboxListProps {
   onRefresh?: () => void;
 }
 
+function isLikelyOTP(code: string): boolean {
+  // Reject all-same-digit codes like 000000, 111111, 999999 — these are HTML artifacts
+  if (/^(\d)\1+$/.test(code)) return false;
+  // Reject sequential runs like 123456, 654321
+  const digits = code.split("").map(Number);
+  const diffs = digits.slice(1).map((d, i) => d - digits[i]);
+  if (diffs.every((d) => d === 1) || diffs.every((d) => d === -1)) return false;
+  return true;
+}
+
 function extractOTP(text: string): string | null {
-  const patterns = [
-    /\b(\d{6})\b/,
-    /\b(\d{4})\b/,
-    /\b(\d{8})\b/,
-    /code[:\s]+(\d{4,8})/i,
-    /OTP[:\s]+(\d{4,8})/i,
-    /password[:\s]+(\d{4,8})/i,
-    /verification[:\s]+(\d{4,8})/i,
+  // Only run on plain text — strip any HTML tags first to avoid matching attribute values
+  const plain = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+  // Labelled patterns first (highest confidence)
+  const labelledPatterns = [
+    /(?:code|OTP|otp|verification|passcode|password)[\s:=]+(\d{4,8})/i,
+    /\b(\d{4,8})\s+(?:is your|as your)\s+(?:code|OTP|verification)/i,
   ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) return match[1];
+  for (const pattern of labelledPatterns) {
+    const match = plain.match(pattern);
+    if (match && isLikelyOTP(match[1])) return match[1];
   }
+
+  // Unlabelled digit blocks — 6-digit first (most common OTP length), then 4/8
+  for (const pattern of [/\b(\d{6})\b/, /\b(\d{8})\b/, /\b(\d{4})\b/]) {
+    const match = plain.match(pattern);
+    if (match && isLikelyOTP(match[1])) return match[1];
+  }
+
   return null;
 }
 
