@@ -119,7 +119,7 @@ export function EmailAddress({
       {/* Hero copy */}
       <div className="space-y-4">
         <h1 className="font-display font-bold tracking-tight text-foreground leading-tight text-4xl sm:text-5xl md:text-6xl">
-          A burner inbox that<br className="hidden sm:block" /> <span style={{ fontWeight: 900, fontStyle: "italic", letterSpacing: "-0.02em" }}>vanishes</span> in 24 hours.
+          Free temporary email that<br className="hidden sm:block" /> <span style={{ fontWeight: 900, fontStyle: "italic", letterSpacing: "-0.02em" }}>vanishes</span> in 24 hours.
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground font-body">
           No account, no tracking.

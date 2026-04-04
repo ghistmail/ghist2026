@@ -329,9 +329,9 @@ export default function Home() {
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">
                 Why Ghist
               </p>
-              <p className="text-base sm:text-lg font-display font-semibold text-foreground max-w-lg">
-                Your privacy shouldn't be a premium feature.
-              </p>
+              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground max-w-lg">
+                Why choose Ghist for disposable email?
+              </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-card rounded-xl p-5 space-y-2">
@@ -339,7 +339,7 @@ export default function Home() {
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Shield className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
                   </div>
-                  <span className="text-sm font-display font-semibold text-foreground">Stay Anonymous</span>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Stay Anonymous</h3>
                 </div>
                 <p className="text-xs text-muted-foreground font-body leading-relaxed">
                   No account, no profile, no trace. Every session is born and dies in isolation.
@@ -351,7 +351,7 @@ export default function Home() {
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Clock className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
                   </div>
-                  <span className="text-sm font-display font-semibold text-foreground">Built to Expire</span>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Built to Expire</h3>
                 </div>
                 <p className="text-xs text-muted-foreground font-body leading-relaxed">
                   Emails are permanently wiped every 24hrs. Ephemeral by architecture, not policy.
@@ -363,7 +363,7 @@ export default function Home() {
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Lock className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
                   </div>
-                  <span className="text-sm font-display font-semibold text-foreground">Secure by Design</span>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Secure by Design</h3>
                 </div>
                 <p className="text-xs text-muted-foreground font-body leading-relaxed">
                   All sessions use end-to-end encryption. Your address is never linked to your identity.
@@ -384,18 +384,85 @@ export default function Home() {
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">
                 Perfect For
               </p>
+              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground max-w-lg sr-only">
+                When to use a temporary email address
+              </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Free trials", desc: "Sign up without risking spam." },
-                { label: "Content downloads", desc: "Grab freebies without the marketing." },
-                { label: "Verifications", desc: "One-time codes, no commitment." },
-                { label: "Promo codes", desc: "Unlock discounts without ruining your inbox." },
+                { label: "Free trials", desc: "Sign up without risking spam.", h3: "Free Trial Sign-Ups" },
+                { label: "Content downloads", desc: "Grab freebies without the marketing.", h3: "Content Downloads" },
+                { label: "Verifications", desc: "One-time codes, no commitment.", h3: "One-Time Verifications" },
+                { label: "Promo codes", desc: "Unlock discounts without ruining your inbox.", h3: "Promo Codes" },
               ].map((item) => (
                 <div key={item.label} className="bg-card rounded-xl p-4 space-y-1">
-                  <span className="text-sm font-display font-semibold text-foreground">{item.label}</span>
+                  <h3 className="text-sm font-display font-semibold text-foreground">{item.label}</h3>
                   <p className="text-[11px] text-muted-foreground font-body leading-relaxed">{item.desc}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        {/* ── What is disposable email ────────────────────────── */}
+        <section className="bg-background px-5 sm:px-8 py-10">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-card rounded-2xl p-6 sm:p-8 space-y-3">
+              <h2 className="text-base font-display font-semibold text-foreground">
+                What is a disposable email address?
+              </h2>
+              <p className="text-sm text-muted-foreground font-body leading-relaxed">
+                A disposable email address — also called a temp mail, throwaway email, or burner email — is a temporary inbox you can use without revealing your real email address. Ghist generates one instantly, requires no account, and permanently deletes everything after 24 hours. It's the cleanest way to protect your inbox from spam, marketing emails, and data brokers.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── FAQ section ───────────────────────────────────────── */}
+        <section className="bg-muted/20 px-5 sm:px-8 py-10">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-6">
+              <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">FAQ</p>
+              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">Frequently asked questions</h2>
+            </div>
+            <div className="space-y-3">
+              {[
+                {
+                  q: "Is Ghist completely free?",
+                  a: "Yes. Ghist is 100% free with no premium tiers, no sign-up, and no credit card required.",
+                },
+                {
+                  q: "Do I need to create an account?",
+                  a: "No. Ghist generates a temporary email address the moment you open the site. No account, no password, no personal information required.",
+                },
+                {
+                  q: "How long does my Ghist address last?",
+                  a: "Every address and all its messages are automatically and permanently deleted after 24 hours. There is no way to recover them.",
+                },
+                {
+                  q: "Is it safe for verification codes and OTPs?",
+                  a: "Yes. Ghist uses TLS 1.3 encryption and all sessions are isolated — your temporary address is never linked to your real identity.",
+                },
+                {
+                  q: "Does Ghist store or sell my data?",
+                  a: "No. Ghist requires no personal information, does not track users, and permanently deletes all emails after 24 hours.",
+                },
+                {
+                  q: "Can I use Ghist for banking or important accounts?",
+                  a: "No. Ghist is for temporary use only. Do not use it for banking, healthcare, government services, or any account requiring long-term access.",
+                },
+              ].map((item) => (
+                <details
+                  key={item.q}
+                  className="bg-card rounded-xl overflow-hidden group"
+                >
+                  <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none font-display font-semibold text-sm text-foreground select-none hover:bg-secondary/30 transition-colors">
+                    <span>{item.q}</span>
+                    <span className="text-muted-foreground text-lg leading-none group-open:rotate-45 transition-transform duration-200">+</span>
+                  </summary>
+                  <p className="px-5 pb-4 pt-1 text-xs text-muted-foreground font-body leading-relaxed">
+                    {item.a}
+                  </p>
+                </details>
               ))}
             </div>
           </div>
