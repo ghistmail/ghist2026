@@ -12,8 +12,8 @@ interface ShadowEllipseProps {
 }
 
 function ShadowEllipse({ size, animated }: ShadowEllipseProps) {
-  const shadowW = Math.round(size * 0.55);
-  const shadowH = Math.round(size * 0.09);
+  const shadowW = Math.round(size * 0.65);
+  const shadowH = Math.round(size * 0.12);
   return (
     <div
       style={{
@@ -21,10 +21,11 @@ function ShadowEllipse({ size, animated }: ShadowEllipseProps) {
         height: shadowH,
         borderRadius: "50%",
         marginTop: Math.round(size * 0.04),
+        background: "radial-gradient(ellipse at center, rgba(100, 100, 255, 0.7) 0%, rgba(100, 100, 255, 0) 70%)",
+        filter: "blur(3px)",
         animation: animated ? "shadow-pulse 3s ease-in-out infinite" : undefined,
         willChange: "transform, opacity",
       }}
-      className="bg-foreground opacity-30"
     />
   );
 }
