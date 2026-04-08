@@ -75,7 +75,7 @@ interface GhistLogoFullProps {
 
 export function GhistLogoFull({ size = 28, animated = true, className = "" }: GhistLogoFullProps) {
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-end gap-2 ${className}`}>
       <div className="inline-flex flex-col items-center" style={{ width: size }}>
         <div
           style={{
@@ -97,7 +97,7 @@ export function GhistLogoFull({ size = 28, animated = true, className = "" }: Gh
       </div>
       <span
         className="font-display font-bold text-foreground leading-none"
-        style={{ fontSize: size * 0.9 }}
+        style={{ fontSize: size * 0.9, paddingBottom: Math.round(size * 0.12) }}
       >
         Ghist
       </span>
