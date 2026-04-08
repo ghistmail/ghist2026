@@ -8,7 +8,7 @@ import { EmailAddress } from "@/components/EmailAddress";
 import { InboxList, EmailCardSkeleton } from "@/components/InboxList";
 import { MessageDetail } from "@/components/MessageDetail";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, MessageSquare, LayoutTemplate, ShoppingBag, BarChart2, Tag, FileText, Bot, Wifi } from "lucide-react";
+import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2, Tag, MessageSquare, Wifi, Bot } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
 
@@ -337,14 +337,12 @@ export default function Home() {
               {[
                 { label: "Newsletter sign-ups",      Icon: Mail },
                 { label: "Free trial accounts",      Icon: Clock },
-                { label: "Forum registrations",      Icon: MessageSquare },
-                { label: "Gated content downloads",  Icon: LayoutTemplate },
-                { label: "Online shopping (once)",   Icon: ShoppingBag },
-                { label: "App beta testing",         Icon: BarChart2 },
-                { label: "Suspect promo codes",      Icon: Tag },
-                { label: "Report submissions",       Icon: FileText },
-                { label: "Shared Wi-Fi portals",     Icon: Wifi },
                 { label: "AI tool sign-ups",         Icon: Bot },
+                { label: "Suspect promo codes",      Icon: Tag },
+                { label: "Gated content downloads",  Icon: LayoutTemplate },
+                { label: "App beta testing",         Icon: BarChart2 },
+                { label: "Feedback forms",           Icon: MessageSquare },
+                { label: "Shared Wi‑Fi portals",     Icon: Wifi },
               ].map(({ label, Icon }) => (
                 <div
                   key={label}
