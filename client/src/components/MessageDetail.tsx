@@ -120,9 +120,17 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
   const sanitizedHtml = useMemo(() => {
     if (!message.htmlBody) return null;
 
-    // Sanitise: strip only scripts and dangerous elements, keep everything else
-    // This mirrors how Gmail/Outlook render emails — rely on sanitisation not sandbox
-    const clean = DOMPurify.sanitize(message.htmlBody, {
+    // ── Step 1: stash all http image URLs before DOMPurify can touch them ──
+    // DOMPurify v3 sanitises URI attributes and rewrites http src to "#".
+    // We swap them for data-ghist-src placeholders first, sanitise, then
+    // restore + proxy-rewrite afterwards.
+    const raw = message.htmlBody
+      .replace(/(<img[^>]*?)\ssrc=(")(https?:[^"]*?)("|)/gi, '$1 data-ghist-src=$2$3$4')
+      .replace(/(<img[^>]*?)\ssrc=(')(https?:[^']*?)('|)/gi, "$1 data-ghist-src=$2$3$4")
+      .replace(/(<source[^>]*?)\ssrc=(")(https?:[^"]*?)("|)/gi, '$1 data-ghist-src=$2$3$4');
+
+    // ── Step 2: sanitise — scripts/iframes out, everything structural kept ──
+    const clean = DOMPurify.sanitize(raw, {
       WHOLE_DOCUMENT: true,
       FORCE_BODY: true,
       ADD_TAGS: [
@@ -131,19 +139,67 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
         "table", "thead", "tbody", "tfoot", "tr", "td", "th",
       ],
       ADD_ATTR: [
-        "src", "srcset", "alt", "width", "height", "border",
+        "data-ghist-src", "srcset",
+        "alt", "width", "height", "border",
         "align", "valign", "cellpadding", "cellspacing", "colspan", "rowspan",
         "bgcolor", "color", "size", "face",
         "charset", "name", "content", "http-equiv",
-        "rel", "type", "media",
+        "rel", "type", "media", "background",
       ],
       FORBID_TAGS: ["script", "noscript", "iframe", "object", "embed", "form", "input", "button", "textarea"],
-      FORBID_ATTR: ["onclick", "ondblclick", "onerror", "onload", "onmouseover", "onmouseout", "onkeyup", "onkeydown", "onsubmit"],
+      FORBID_ATTR: ["onclick", "ondblclick", "onerror", "onmouseover", "onmouseout", "onkeyup", "onkeydown", "onsubmit"],
     });
 
     const doc = new DOMParser().parseFromString(clean, "text/html");
+    const proxyBase = `${window.location.origin}/api/imgproxy?url=`;
 
-    // Force all links to open in new tab; scrub javascript: hrefs
+    const toProxy = (url: string) =>
+      url.startsWith("http") ? proxyBase + encodeURIComponent(url) : url;
+
+    // ── Step 3: restore stashed src values and proxy them ──
+    doc.querySelectorAll("img[data-ghist-src], source[data-ghist-src]").forEach((el) => {
+      const original = el.getAttribute("data-ghist-src") || "";
+      el.setAttribute("src", toProxy(original));
+      el.removeAttribute("data-ghist-src");
+    });
+
+    // ── Step 4: proxy srcset ──
+    doc.querySelectorAll("[srcset]").forEach((el) => {
+      const rewritten = (el.getAttribute("srcset") || "")
+        .split(",")
+        .map(part => {
+          const [u, ...rest] = part.trim().split(/\s+/);
+          return u.startsWith("http") ? [toProxy(u), ...rest].join(" ") : part;
+        })
+        .join(", ");
+      el.setAttribute("srcset", rewritten);
+    });
+
+    // ── Step 5: proxy inline style background-image on elements ──
+    doc.querySelectorAll("[style]").forEach((el) => {
+      const s = el.getAttribute("style") || "";
+      const patched = s.replace(
+        /url\(['"]?(https?:[^'")]+)['"]?\)/gi,
+        (_, u) => `url(${toProxy(u)})`
+      );
+      if (patched !== s) el.setAttribute("style", patched);
+    });
+
+    // ── Step 6: proxy background= attribute (old-school HTML emails) ──
+    doc.querySelectorAll("[background]").forEach((el) => {
+      const bg = el.getAttribute("background") || "";
+      if (bg.startsWith("http")) el.setAttribute("background", toProxy(bg));
+    });
+
+    // ── Step 7: proxy URLs inside <style> blocks ──
+    doc.querySelectorAll("style").forEach((style) => {
+      style.textContent = (style.textContent || "").replace(
+        /url\(['"]?(https?:[^'")]+)['"]?\)/gi,
+        (_, u) => `url(${toProxy(u)})`
+      );
+    });
+
+    // ── Step 8: links open in new tab, scrub javascript: hrefs ──
     doc.querySelectorAll("a").forEach((a) => {
       const href = a.getAttribute("href") || "";
       if (href.toLowerCase().startsWith("javascript")) {
@@ -154,25 +210,10 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
       }
     });
 
-    // Rewrite all image src through our server-side proxy.
-    // Must use an absolute URL because srcdoc iframes resolve relative
-    // paths against about:srcdoc, not the parent origin.
-    const proxyBase = `${window.location.origin}/api/imgproxy?url=`;
-    doc.querySelectorAll("img").forEach((img) => {
-      const src = img.getAttribute("src") || "";
-      if (src.toLowerCase().startsWith("javascript")) {
-        img.removeAttribute("src");
-      } else if (src.startsWith("http")) {
-        img.setAttribute("src", proxyBase + encodeURIComponent(src));
-      }
-    });
-
-    // Inject <base target="_blank"> so the iframe resolves resources
-    // and link clicks against the correct origin
+    // ── Step 9: <base> so any remaining relative paths resolve to origin ──
     const base = doc.createElement("base");
     base.setAttribute("target", "_blank");
-    const head = doc.head || doc.createElement("head");
-    head.insertBefore(base, head.firstChild);
+    (doc.head || doc.documentElement).insertBefore(base, doc.head?.firstChild ?? null);
 
     return doc.documentElement.outerHTML;
   }, [message.htmlBody]);
