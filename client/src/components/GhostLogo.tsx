@@ -12,19 +12,21 @@ interface ShadowEllipseProps {
 }
 
 function ShadowEllipse({ size, animated }: ShadowEllipseProps) {
-  const shadowW = Math.round(size * 0.65);
-  const shadowH = Math.round(size * 0.12);
+  const shadowW = Math.round(size * 0.75);
+  const shadowH = Math.max(4, Math.round(size * 0.16));
   return (
     <div
+      className="shadow-ellipse"
       style={{
         width: shadowW,
         height: shadowH,
         borderRadius: "50%",
-        marginTop: Math.round(size * 0.04),
-        background: "radial-gradient(ellipse at center, rgba(100, 100, 255, 0.7) 0%, rgba(100, 100, 255, 0) 70%)",
-        filter: "blur(3px)",
+        marginTop: Math.round(size * 0.02),
+        background: "radial-gradient(ellipse at center, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0) 75%)",
+        filter: `blur(${Math.max(2, Math.round(size * 0.06))}px)`,
         animation: animated ? "shadow-pulse 3s ease-in-out infinite" : undefined,
         willChange: "transform, opacity",
+        flexShrink: 0,
       }}
     />
   );

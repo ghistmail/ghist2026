@@ -9,7 +9,7 @@ export function Header() {
 
   return (
     <header
-      className="sticky top-0 z-50"
+      className="sticky top-0 z-50 overflow-visible"
       style={{
         background: theme === "dark"
           ? "rgba(14,14,14,0.72)"
@@ -21,7 +21,7 @@ export function Header() {
           : "1px solid rgba(0,0,0,0.06)",
       }}
     >
-      <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4 overflow-visible">
         {/* Animated ghost + wordmark — left on desktop, will be part of centred hero on mobile */}
         <Link href="/" className="flex items-center no-underline" data-testid="text-brand">
           <GhistLogoFull size={28} animated={true} />

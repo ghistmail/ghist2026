@@ -291,12 +291,17 @@
 @keyframes shadow-pulse {
   0%, 100% {
     transform: scale(1);
-    opacity: 0.25;
+    opacity: 0.7;
   }
   50% {
-    transform: scale(0.55);
-    opacity: 0.08;
+    transform: scale(0.6);
+    opacity: 0.25;
   }
+}
+
+/* Dark mode: flip ellipse to light so it shows on dark backgrounds */
+.dark .shadow-ellipse {
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.3) 40%, rgba(255,255,255,0) 75%) !important;
 }
 
 /* Address typing reveal animation */
