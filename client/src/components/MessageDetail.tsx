@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ExternalLink, Copy, Check } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import DOMPurify from "dompurify";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MessageDetailProps {
@@ -58,6 +58,46 @@ function extractLinks(html: string): { href: string; text: string }[] {
   return links;
 }
 
+// ── Sandboxed iframe email renderer ─────────────────────────────────────────
+// Renders the email HTML in a fully isolated iframe so the sender's styles,
+// fonts, images and table layouts are preserved exactly as intended.
+// Auto-resizes to the content height to avoid a nested scrollbar.
+function EmailIframe({ html }: { html: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(400);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const onLoad = () => {
+      try {
+        const doc = iframe.contentDocument;
+        if (doc) {
+          const h = doc.documentElement.scrollHeight || doc.body?.scrollHeight || 400;
+          setHeight(h + 16); // small buffer
+        }
+      } catch {
+        // cross-origin guard — shouldn't happen with srcdoc
+      }
+    };
+
+    iframe.addEventListener("load", onLoad);
+    return () => iframe.removeEventListener("load", onLoad);
+  }, [html]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      srcDoc={html}
+      sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+      title="Email content"
+      style={{ width: "100%", height, border: "none", display: "block" }}
+      scrolling="no"
+    />
+  );
+}
+
 export function MessageDetail({ message, onBack }: MessageDetailProps) {
   const [otpCopied, setOtpCopied] = useState(false);
   const { toast } = useToast();
@@ -70,67 +110,48 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
   const sanitizedHtml = useMemo(() => {
     if (!message.htmlBody) return null;
 
+    // Sanitise: strip scripts/iframes but keep everything a real email needs
     const clean = DOMPurify.sanitize(message.htmlBody, {
+      WHOLE_DOCUMENT: true,
+      FORCE_BODY: true,
       ALLOWED_TAGS: [
+        "html", "head", "body", "meta", "title", "style",
         "div", "span", "p", "br", "h1", "h2", "h3", "h4", "h5", "h6",
-        "a", "strong", "b", "em", "i", "u", "ul", "ol", "li",
-        "table", "thead", "tbody", "tr", "td", "th",
-        "blockquote", "pre", "code", "hr",
-        "img", "picture", "source", "center", "font",
+        "a", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li",
+        "table", "thead", "tbody", "tfoot", "tr", "td", "th",
+        "blockquote", "pre", "code", "hr", "img", "picture", "source",
+        "center", "font", "small", "sup", "sub",
       ],
-      ALLOWED_ATTR: ["href", "target", "rel", "style", "class",
-        "src", "alt", "width", "height", "border",
-        "align", "valign", "cellpadding", "cellspacing", "bgcolor",
-        "color", "size", "face",
+      ALLOWED_ATTR: [
+        "href", "target", "rel", "style", "class", "id",
+        "src", "srcset", "alt", "width", "height", "border",
+        "align", "valign", "cellpadding", "cellspacing", "colspan", "rowspan",
+        "bgcolor", "color", "size", "face",
+        "charset", "name", "content", "http-equiv",
       ],
-      FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input"],
-      FORBID_ATTR: ["onclick", "onerror", "onload", "onmouseover"],
+      FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input", "button"],
+      FORBID_ATTR: ["onclick", "onerror", "onload", "onmouseover", "onmouseout"],
       ADD_ATTR: ["target"],
-      // Only allow http/https/data image srcs — no javascript:
-      ALLOW_DATA_ATTR: false,
     });
 
-    const div = document.createElement("div");
-    div.innerHTML = clean;
-
-    // Force all links to open in new tab
-    div.querySelectorAll("a").forEach((a) => {
-      a.setAttribute("target", "_blank");
-      a.setAttribute("rel", "noopener noreferrer");
-      // Scrub any javascript: hrefs
+    // Force all links to open in new tab and scrub javascript: hrefs
+    const doc = new DOMParser().parseFromString(clean, "text/html");
+    doc.querySelectorAll("a").forEach((a) => {
       const href = a.getAttribute("href") || "";
-      if (href.toLowerCase().startsWith("javascript")) a.removeAttribute("href");
-    });
-
-    // Scrub javascript: from img src
-    div.querySelectorAll("img").forEach((img) => {
-      const src = img.getAttribute("src") || "";
-      if (src.toLowerCase().startsWith("javascript")) img.removeAttribute("src");
-      // Make images responsive
-      img.style.maxWidth = "100%";
-      img.style.height = "auto";
-      img.style.display = "block";
-    });
-
-    // Strip colour/background inline styles so dark-mode CSS can take over,
-    // BUT preserve layout-critical props (width, height, padding, etc.)
-    div.querySelectorAll("[style]").forEach((el) => {
-      const s = el.getAttribute("style") || "";
-      const cleaned = s
-        .split(";")
-        .filter((rule) => {
-          const prop = rule.split(":")[0].trim().toLowerCase();
-          return prop !== "color" && prop !== "background-color" && prop !== "background";
-        })
-        .join(";");
-      if (cleaned.trim()) {
-        el.setAttribute("style", cleaned);
+      if (href.toLowerCase().startsWith("javascript")) {
+        a.removeAttribute("href");
       } else {
-        el.removeAttribute("style");
+        a.setAttribute("target", "_blank");
+        a.setAttribute("rel", "noopener noreferrer");
       }
     });
+    // Scrub javascript: src on images
+    doc.querySelectorAll("img").forEach((img) => {
+      const src = img.getAttribute("src") || "";
+      if (src.toLowerCase().startsWith("javascript")) img.removeAttribute("src");
+    });
 
-    return div.innerHTML;
+    return doc.documentElement.outerHTML;
   }, [message.htmlBody]);
 
   const links = useMemo(
@@ -252,18 +273,13 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
           </div>
         )}
 
-        {/* Email body — tonal shift, no border */}
-        <div className="pt-4">
+        {/* Email body — rendered in isolated iframe so sender styles/images are preserved */}
+        <div className="pt-4" data-testid="text-email-body">
           {sanitizedHtml ? (
-            <div
-              className="email-html-content text-sm"
-              dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-              data-testid="text-email-body"
-            />
+            <EmailIframe html={sanitizedHtml} />
           ) : (
             <pre
               className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed"
-              data-testid="text-email-body"
             >
               {message.textBody}
             </pre>
