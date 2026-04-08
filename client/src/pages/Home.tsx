@@ -333,7 +333,7 @@ export default function Home() {
                 Anywhere you'd normally hand over your real address and regret it later.
               </p>
             </div>
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2.5">
               {[
                 { label: "Newsletter sign-ups",      Icon: Mail },
                 { label: "Free trial accounts",      Icon: Clock },
@@ -348,12 +348,12 @@ export default function Home() {
               ].map(({ label, Icon }) => (
                 <div
                   key={label}
-                  className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-card border border-border/40"
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border/40"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-muted/60 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                  <div className="w-7 h-7 rounded-lg bg-muted/60 flex items-center justify-center shrink-0">
+                    <Icon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
                   </div>
-                  <span className="text-sm sm:text-base font-body font-medium text-foreground">{label}</span>
+                  <span className="text-sm font-body font-medium text-foreground whitespace-nowrap">{label}</span>
                 </div>
               ))}
             </div>
