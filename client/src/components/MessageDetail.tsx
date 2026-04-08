@@ -101,8 +101,6 @@ function EmailIframe({ html }: { html: string }) {
     <iframe
       ref={iframeRef}
       srcDoc={srcDoc}
-      // allow-scripts needed for postMessage height; no allow-same-origin so iframe stays isolated
-      sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts"
       title="Email content"
       style={{ width: "100%", height, border: "none", display: "block", background: "white", borderRadius: "8px" }}
       scrolling="no"
@@ -122,28 +120,25 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
   const sanitizedHtml = useMemo(() => {
     if (!message.htmlBody) return null;
 
-    // Sanitise: strip scripts/iframes but keep everything a real email needs
+    // Sanitise: strip only scripts and dangerous elements, keep everything else
+    // This mirrors how Gmail/Outlook render emails — rely on sanitisation not sandbox
     const clean = DOMPurify.sanitize(message.htmlBody, {
       WHOLE_DOCUMENT: true,
       FORCE_BODY: true,
-      ALLOWED_TAGS: [
-        "html", "head", "body", "meta", "title", "style",
-        "div", "span", "p", "br", "h1", "h2", "h3", "h4", "h5", "h6",
-        "a", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li",
+      ADD_TAGS: [
+        "html", "head", "body", "meta", "title", "style", "link",
+        "center", "font", "small", "sup", "sub", "img", "picture", "source",
         "table", "thead", "tbody", "tfoot", "tr", "td", "th",
-        "blockquote", "pre", "code", "hr", "img", "picture", "source",
-        "center", "font", "small", "sup", "sub",
       ],
-      ALLOWED_ATTR: [
-        "href", "target", "rel", "style", "class", "id",
+      ADD_ATTR: [
         "src", "srcset", "alt", "width", "height", "border",
         "align", "valign", "cellpadding", "cellspacing", "colspan", "rowspan",
         "bgcolor", "color", "size", "face",
         "charset", "name", "content", "http-equiv",
+        "rel", "type", "media",
       ],
-      FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input", "button"],
-      FORBID_ATTR: ["onclick", "onerror", "onload", "onmouseover", "onmouseout"],
-      ADD_ATTR: ["target"],
+      FORBID_TAGS: ["script", "noscript", "iframe", "object", "embed", "form", "input", "button", "textarea"],
+      FORBID_ATTR: ["onclick", "ondblclick", "onerror", "onload", "onmouseover", "onmouseout", "onkeyup", "onkeydown", "onsubmit"],
     });
 
     // Force all links to open in new tab and scrub javascript: hrefs
