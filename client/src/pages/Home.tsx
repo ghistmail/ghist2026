@@ -8,7 +8,7 @@ import { EmailAddress } from "@/components/EmailAddress";
 import { InboxList, EmailCardSkeleton } from "@/components/InboxList";
 import { MessageDetail } from "@/components/MessageDetail";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertTriangle, Shield, Clock, Mail, Lock, EyeOff, X } from "lucide-react";
+import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, MessageSquare, LayoutTemplate, ShoppingBag, BarChart2, Tag, FileText, Bot, Wifi } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
 
@@ -322,84 +322,124 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Why Ghist ─────────────────────────────────────────── */}
+        {/* ── Every signup you don't quite trust ───────────────── */}
+        <section className="bg-muted/20 px-5 sm:px-8 py-10 sm:py-14">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-8">
+              <h2 className="text-3xl sm:text-4xl font-display font-black text-foreground leading-tight tracking-tight">
+                Every signup you<br />don't quite trust.
+              </h2>
+              <p className="text-base text-muted-foreground font-body mt-4 leading-relaxed">
+                Anywhere you'd normally hand over your real address and regret it later.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { label: "Newsletter sign-ups",      Icon: Mail },
+                { label: "Free trial accounts",      Icon: Clock },
+                { label: "Forum registrations",      Icon: MessageSquare },
+                { label: "Gated content downloads",  Icon: LayoutTemplate },
+                { label: "Online shopping (once)",   Icon: ShoppingBag },
+                { label: "App beta testing",         Icon: BarChart2 },
+                { label: "Suspect promo codes",      Icon: Tag },
+                { label: "Report submissions",       Icon: FileText },
+                { label: "Shared Wi-Fi portals",     Icon: Wifi },
+                { label: "AI tool sign-ups",         Icon: Bot },
+              ].map(({ label, Icon }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-card border border-border/40"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-muted/60 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                  </div>
+                  <span className="text-sm sm:text-base font-body font-medium text-foreground">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── How It Works ──────────────────────────────────────── */}
         <section className="bg-background px-5 sm:px-8 py-10">
           <div className="max-w-3xl mx-auto">
-            <div className="mb-6">
+            <div className="mb-7">
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">
-                Why Ghist
+                How It Works
               </p>
-              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground max-w-lg">
-                Why choose Ghist for disposable email?
+              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">
+                Three steps. Zero effort.
               </h2>
+              <p className="text-sm text-muted-foreground font-body mt-2 max-w-lg leading-relaxed">
+                No account, no profile, no trace. Ghist gives you a disposable inbox the moment you need it — and makes it disappear just as easily.
+              </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-card rounded-xl p-5 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Shield className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-sm font-display font-semibold text-foreground">Stay Anonymous</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-[11px] font-display font-bold text-primary">1</span>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Your inbox, now</h3>
                 </div>
                 <p className="text-xs text-muted-foreground font-body leading-relaxed">
-                  No account, no profile, no trace. Every session is born and dies in isolation.
+                  An address is ready the moment you arrive. No signup, no name, no credit card. Just a fresh inbox waiting for mail.
                 </p>
               </div>
-
               <div className="bg-card rounded-xl p-5 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Clock className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-sm font-display font-semibold text-foreground">Built to Expire</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-[11px] font-display font-bold text-primary">2</span>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Use it anywhere</h3>
                 </div>
                 <p className="text-xs text-muted-foreground font-body leading-relaxed">
-                  Emails are permanently wiped every 24hrs. Ephemeral by architecture, not policy.
+                  Drop the address into any sign-up form, free trial, content download, or newsletter you don't fully trust. Your email arrives instantly.
                 </p>
               </div>
-
               <div className="bg-card rounded-xl p-5 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Lock className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-sm font-display font-semibold text-foreground">Secure by Design</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-[11px] font-display font-bold text-primary">3</span>
+                  <h3 className="text-sm font-display font-semibold text-foreground">It vanishes</h3>
                 </div>
                 <p className="text-xs text-muted-foreground font-body leading-relaxed">
-                  All sessions use end-to-end encryption. Your address is never linked to your identity.
+                  Emails are permanently wiped every 24 hours. Ephemeral by architecture, not policy. No cleanup required. You're a ghost.
                 </p>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  <span className="text-[10px] font-body text-muted-foreground">TLS 1.3 active</span>
-                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── Perfect For ────────────────────────────────────────── */}
+        {/* ── Why Ghist? ─────────────────────────────────────────── */}
         <section className="bg-muted/20 px-5 sm:px-8 py-10">
           <div className="max-w-3xl mx-auto">
-            <div className="mb-6">
+            <div className="mb-7">
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">
-                Perfect For
+                Why Ghist?
               </p>
-              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground max-w-lg sr-only">
-                When to use a temporary email address
+              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">
+                Built for people who'd rather not be tracked.
               </h2>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: "Free trials", desc: "Sign up without risking spam.", h3: "Free Trial Sign-Ups" },
-                { label: "Content downloads", desc: "Grab freebies without the marketing.", h3: "Content Downloads" },
-                { label: "Verifications", desc: "One-time codes, no commitment.", h3: "One-Time Verifications" },
-                { label: "Promo codes", desc: "Unlock discounts without ruining your inbox.", h3: "Promo Codes" },
-              ].map((item) => (
-                <div key={item.label} className="bg-card rounded-xl p-4 space-y-1">
-                  <h3 className="text-sm font-display font-semibold text-foreground">{item.label}</h3>
-                  <p className="text-[11px] text-muted-foreground font-body leading-relaxed">{item.desc}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-card rounded-xl p-5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <EyeOff className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Zero tracking, ever</h3>
                 </div>
-              ))}
+                <p className="text-xs text-muted-foreground font-body leading-relaxed">
+                  We don't log IP addresses, browsing behaviour, or anything personally identifiable. Your ghost address is yours alone — not ours.
+                </p>
+              </div>
+              <div className="bg-card rounded-xl p-5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Clock className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Fast enough for OTPs</h3>
+                </div>
+                <p className="text-xs text-muted-foreground font-body leading-relaxed">
+                  Mail lands in your inbox within seconds — fast enough for verification codes and time-sensitive login emails.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -411,7 +451,7 @@ export default function Home() {
                 What is a disposable email address?
               </h2>
               <p className="text-sm text-muted-foreground font-body leading-relaxed">
-                A disposable email address — also called a temp mail, throwaway email, or burner email — is a temporary inbox you can use without revealing your real email address. Ghist generates one instantly, requires no account, and permanently deletes everything after 24 hours. It's the cleanest way to protect your inbox from spam, marketing emails, and data brokers.
+                A disposable email address — also called a temp mail, throwaway email, or burner email — is a temporary inbox you can use without revealing your real address. Ghist generates one instantly, requires no account, and permanently deletes everything after 24 hours. It's the cleanest way to keep your inbox free from spam and unwanted marketing.
               </p>
             </div>
           </div>
