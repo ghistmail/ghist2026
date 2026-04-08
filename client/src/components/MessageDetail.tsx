@@ -154,16 +154,25 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
       }
     });
 
-    // Rewrite all image src through our server-side proxy so marketing
-    // servers can't block them based on referrer/origin
+    // Rewrite all image src through our server-side proxy.
+    // Must use an absolute URL because srcdoc iframes resolve relative
+    // paths against about:srcdoc, not the parent origin.
+    const proxyBase = `${window.location.origin}/api/imgproxy?url=`;
     doc.querySelectorAll("img").forEach((img) => {
       const src = img.getAttribute("src") || "";
       if (src.toLowerCase().startsWith("javascript")) {
         img.removeAttribute("src");
       } else if (src.startsWith("http")) {
-        img.setAttribute("src", `/api/imgproxy?url=${encodeURIComponent(src)}`);
+        img.setAttribute("src", proxyBase + encodeURIComponent(src));
       }
     });
+
+    // Inject <base target="_blank"> so the iframe resolves resources
+    // and link clicks against the correct origin
+    const base = doc.createElement("base");
+    base.setAttribute("target", "_blank");
+    const head = doc.head || doc.createElement("head");
+    head.insertBefore(base, head.firstChild);
 
     return doc.documentElement.outerHTML;
   }, [message.htmlBody]);
