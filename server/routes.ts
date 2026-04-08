@@ -525,6 +525,35 @@ export async function registerRoutes(
     }
   });
 
+  // ── Image proxy — fetches external email images server-side to avoid
+  // referrer/CORS blocks from email marketing servers
+  app.get("/api/imgproxy", async (req: Request, res: Response) => {
+    const url = req.query.url as string;
+    if (!url) return res.status(400).end();
+    // Only proxy http/https URLs
+    if (!/^https?:\/\//i.test(url)) return res.status(400).end();
+    try {
+      const upstream = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; Ghist/1.0)",
+          "Accept": "image/*,*/*;q=0.8",
+        },
+        redirect: "follow",
+      });
+      const contentType = upstream.headers.get("content-type") || "image/jpeg";
+      // Only relay image responses
+      if (!contentType.startsWith("image/") && !contentType.startsWith("application/octet")) {
+        return res.status(415).end();
+      }
+      res.set("Content-Type", contentType);
+      res.set("Cache-Control", "public, max-age=86400");
+      const buf = await upstream.arrayBuffer();
+      return res.send(Buffer.from(buf));
+    } catch (err: any) {
+      return res.status(502).end();
+    }
+  });
+
   // Delete mailbox early
   app.delete("/api/mailbox/:token", async (req: Request, res: Response) => {
     const mailbox = await storage.getMailboxByToken(req.params.token);

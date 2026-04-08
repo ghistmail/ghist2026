@@ -141,8 +141,9 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
       FORBID_ATTR: ["onclick", "ondblclick", "onerror", "onload", "onmouseover", "onmouseout", "onkeyup", "onkeydown", "onsubmit"],
     });
 
-    // Force all links to open in new tab and scrub javascript: hrefs
     const doc = new DOMParser().parseFromString(clean, "text/html");
+
+    // Force all links to open in new tab; scrub javascript: hrefs
     doc.querySelectorAll("a").forEach((a) => {
       const href = a.getAttribute("href") || "";
       if (href.toLowerCase().startsWith("javascript")) {
@@ -152,10 +153,16 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
         a.setAttribute("rel", "noopener noreferrer");
       }
     });
-    // Scrub javascript: src on images
+
+    // Rewrite all image src through our server-side proxy so marketing
+    // servers can't block them based on referrer/origin
     doc.querySelectorAll("img").forEach((img) => {
       const src = img.getAttribute("src") || "";
-      if (src.toLowerCase().startsWith("javascript")) img.removeAttribute("src");
+      if (src.toLowerCase().startsWith("javascript")) {
+        img.removeAttribute("src");
+      } else if (src.startsWith("http")) {
+        img.setAttribute("src", `/api/imgproxy?url=${encodeURIComponent(src)}`);
+      }
     });
 
     return doc.documentElement.outerHTML;
