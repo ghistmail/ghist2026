@@ -61,38 +61,50 @@ function extractLinks(html: string): { href: string; text: string }[] {
 // ── Sandboxed iframe email renderer ─────────────────────────────────────────
 // Renders the email HTML in a fully isolated iframe so the sender's styles,
 // fonts, images and table layouts are preserved exactly as intended.
-// Auto-resizes to the content height to avoid a nested scrollbar.
+// Uses postMessage to auto-resize height without needing allow-same-origin.
 function EmailIframe({ html }: { html: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(400);
+  const [height, setHeight] = useState(600);
+
+  // Inject a tiny resize script into the email HTML before rendering
+  const srcDoc = useMemo(() => {
+    const resizeScript = `<script>
+(function(){
+  function send(){
+    window.parent.postMessage({type:'ghist-iframe-height',h:document.body.scrollHeight},'*');
+  }
+  document.addEventListener('DOMContentLoaded', send);
+  window.addEventListener('load', send);
+  // Re-check after images load
+  setTimeout(send, 500);
+  setTimeout(send, 1500);
+})();
+<\/script>`;
+    // Insert before </body> or append
+    if (html.includes('</body>')) {
+      return html.replace('</body>', resizeScript + '</body>');
+    }
+    return html + resizeScript;
+  }, [html]);
 
   useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const onLoad = () => {
-      try {
-        const doc = iframe.contentDocument;
-        if (doc) {
-          const h = doc.documentElement.scrollHeight || doc.body?.scrollHeight || 400;
-          setHeight(h + 16); // small buffer
-        }
-      } catch {
-        // cross-origin guard — shouldn't happen with srcdoc
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'ghist-iframe-height' && typeof e.data.h === 'number') {
+        setHeight(e.data.h + 24);
       }
     };
-
-    iframe.addEventListener("load", onLoad);
-    return () => iframe.removeEventListener("load", onLoad);
-  }, [html]);
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
 
   return (
     <iframe
       ref={iframeRef}
-      srcDoc={html}
-      sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+      srcDoc={srcDoc}
+      // allow-scripts needed for postMessage height; no allow-same-origin so iframe stays isolated
+      sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts"
       title="Email content"
-      style={{ width: "100%", height, border: "none", display: "block" }}
+      style={{ width: "100%", height, border: "none", display: "block", background: "white", borderRadius: "8px" }}
       scrolling="no"
     />
   );
