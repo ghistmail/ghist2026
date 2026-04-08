@@ -66,23 +66,30 @@ function EmailIframe({ html }: { html: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(600);
 
-  // Inject a tiny resize script into the email HTML before rendering
+  // Inject a resize script — fires on load + after images settle
   const srcDoc = useMemo(() => {
     const resizeScript = `<script>
 (function(){
   function send(){
-    window.parent.postMessage({type:'ghist-iframe-height',h:document.body.scrollHeight},'*');
+    var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    window.parent.postMessage({type:'ghist-iframe-height',h:h},'*');
   }
   document.addEventListener('DOMContentLoaded', send);
   window.addEventListener('load', send);
-  // Re-check after images load
-  setTimeout(send, 500);
-  setTimeout(send, 1500);
+  // Re-fire after proxied images finish loading
+  setTimeout(send, 800);
+  setTimeout(send, 2000);
+  // Watch for any late-loading images
+  document.querySelectorAll('img').forEach(function(img){
+    img.addEventListener('load', send);
+    img.addEventListener('error', send);
+  });
 })();
 <\/script>`;
-    // Insert before </body> or append
-    if (html.includes('</body>')) {
-      return html.replace('</body>', resizeScript + '</body>');
+    // Case-insensitive replace for </body>
+    const bodyClose = html.search(/<\/body>/i);
+    if (bodyClose !== -1) {
+      return html.slice(0, bodyClose) + resizeScript + html.slice(bodyClose);
     }
     return html + resizeScript;
   }, [html]);
@@ -210,10 +217,32 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
       }
     });
 
-    // ── Step 9: <base> so any remaining relative paths resolve to origin ──
+    // ── Step 9: <base href> so proxied absolute URLs resolve correctly ──
+    // Also inject a viewport meta and responsive override CSS so wide email
+    // tables scale down to fit mobile screens inside the iframe.
+    const head = doc.head || doc.documentElement;
+
     const base = doc.createElement("base");
+    base.setAttribute("href", window.location.origin + "/");
     base.setAttribute("target", "_blank");
-    (doc.head || doc.documentElement).insertBefore(base, doc.head?.firstChild ?? null);
+    head.insertBefore(base, head.firstChild);
+
+    // Viewport meta — required for mobile scaling inside srcdoc iframe
+    const viewport = doc.createElement("meta");
+    viewport.setAttribute("name", "viewport");
+    viewport.setAttribute("content", "width=device-width, initial-scale=1.0");
+    head.insertBefore(viewport, base.nextSibling);
+
+    // Responsive override: scale wide email tables to fit viewport
+    const style = doc.createElement("style");
+    style.textContent = [
+      "body { margin: 0 !important; padding: 0 !important; }",
+      "table, td, div, img { max-width: 100% !important; }",
+      "img { height: auto !important; }",
+      // Prevent emails with fixed widths from overflowing
+      "body > table, body > center > table, body > div > table { width: 100% !important; }",
+    ].join(" ");
+    head.appendChild(style);
 
     return doc.documentElement.outerHTML;
   }, [message.htmlBody]);
