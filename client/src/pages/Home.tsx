@@ -443,20 +443,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-        {/* ── What is disposable email ────────────────────────── */}
-        <section className="bg-background px-5 sm:px-8 py-10">
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-card rounded-2xl p-6 sm:p-8 space-y-3">
-              <h2 className="text-base font-display font-semibold text-foreground">
-                What is a disposable email address?
-              </h2>
-              <p className="text-sm text-muted-foreground font-body leading-relaxed">
-                A disposable email address — also called a temp mail, throwaway email, or burner email — is a temporary inbox you can use without revealing your real address. Ghist generates one instantly, requires no account, and permanently deletes everything after 24 hours. It's the cleanest way to keep your inbox free from spam and unwanted marketing.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* ── FAQ section ───────────────────────────────────────── */}
         <section className="bg-muted/20 px-5 sm:px-8 py-10">
           <div className="max-w-3xl mx-auto">
@@ -505,6 +491,18 @@ export default function Home() {
                 </details>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── Definition — small print, SEO ────────────────────── */}
+        <section className="bg-background px-5 sm:px-8 pt-6 pb-10">
+          <div className="max-w-3xl mx-auto border-t border-border/30 pt-6">
+            <h2 className="text-[11px] font-body font-semibold text-muted-foreground/60 uppercase tracking-[0.15em] mb-2">
+              What is a disposable email address?
+            </h2>
+            <p className="text-[11px] text-muted-foreground/50 font-body leading-relaxed max-w-2xl">
+              A disposable email address — also called a temp mail, throwaway email, or burner email — is a temporary inbox you can use without revealing your real address. Ghist generates one instantly, requires no account, and permanently deletes everything after 24 hours. It’s the cleanest way to keep your inbox free from spam and unwanted marketing.
+            </p>
           </div>
         </section>
       </main>
