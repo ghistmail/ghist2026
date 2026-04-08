@@ -76,23 +76,44 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
         "a", "strong", "b", "em", "i", "u", "ul", "ol", "li",
         "table", "thead", "tbody", "tr", "td", "th",
         "blockquote", "pre", "code", "hr",
+        "img", "picture", "source", "center", "font",
       ],
-      ALLOWED_ATTR: ["href", "target", "rel", "style", "class"],
-      FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input", "img"],
+      ALLOWED_ATTR: ["href", "target", "rel", "style", "class",
+        "src", "alt", "width", "height", "border",
+        "align", "valign", "cellpadding", "cellspacing", "bgcolor",
+        "color", "size", "face",
+      ],
+      FORBID_TAGS: ["script", "iframe", "object", "embed", "form", "input"],
       FORBID_ATTR: ["onclick", "onerror", "onload", "onmouseover"],
       ADD_ATTR: ["target"],
+      // Only allow http/https/data image srcs — no javascript:
+      ALLOW_DATA_ATTR: false,
     });
 
-    // Force all links to open in new tab
     const div = document.createElement("div");
     div.innerHTML = clean;
+
+    // Force all links to open in new tab
     div.querySelectorAll("a").forEach((a) => {
       a.setAttribute("target", "_blank");
       a.setAttribute("rel", "noopener noreferrer");
+      // Scrub any javascript: hrefs
+      const href = a.getAttribute("href") || "";
+      if (href.toLowerCase().startsWith("javascript")) a.removeAttribute("href");
     });
 
-    // Strip any inline color/background-color styles from all elements so
-    // our dark-mode CSS override can take effect cleanly
+    // Scrub javascript: from img src
+    div.querySelectorAll("img").forEach((img) => {
+      const src = img.getAttribute("src") || "";
+      if (src.toLowerCase().startsWith("javascript")) img.removeAttribute("src");
+      // Make images responsive
+      img.style.maxWidth = "100%";
+      img.style.height = "auto";
+      img.style.display = "block";
+    });
+
+    // Strip colour/background inline styles so dark-mode CSS can take over,
+    // BUT preserve layout-critical props (width, height, padding, etc.)
     div.querySelectorAll("[style]").forEach((el) => {
       const s = el.getAttribute("style") || "";
       const cleaned = s

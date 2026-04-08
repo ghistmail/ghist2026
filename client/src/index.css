@@ -374,10 +374,13 @@
   font-family: var(--font-sans);
   line-height: 1.6;
   color: hsl(var(--foreground));
-  word-break: break-word;
+  /* overflow-wrap instead of word-break — prevents single-char columns in narrow table cells */
+  overflow-wrap: anywhere;
 }
 .email-html-content img {
-  display: none;
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 .email-html-content a {
   color: hsl(var(--primary));
@@ -389,10 +392,14 @@
 }
 .email-html-content table {
   border-collapse: collapse;
-  width: 100%;
+  /* Don't force full width — let email tables use their own widths */
+  max-width: 100%;
 }
 .email-html-content td, .email-html-content th {
   padding: 4px 8px;
+  /* Prevent cells collapsing to 0 and causing vertical text */
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 /* Dark mode overrides for email body — make text readable on dark bg */
