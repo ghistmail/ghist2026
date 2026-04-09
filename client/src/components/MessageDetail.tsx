@@ -127,11 +127,40 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
   const sanitizedHtml = useMemo(() => {
     if (!message.htmlBody) return null;
 
+    // ── Step 0: unwrap provider image proxy rewrites ──
+    // Guerrilla Mail (and some other providers) rewrite every <img src="https://...">
+    // to their own relative proxy path: /res.php?r=1&n=img&q=<encoded_original_url>
+    // These relative URLs resolve against about:srcdoc in the iframe and never load.
+    // Extract the original URL from the q= parameter and restore it.
+    const unwrapped = message.htmlBody
+      // Handle src="/res.php?...&q=<encoded>" on img/source elements
+      .replace(
+        /src=["']\/res\.php[^"']*?[?&](?:amp;)?q=([^&"'\s]+)[^"']*?["']/gi,
+        (_m: string, encoded: string) => {
+          try {
+            const url = decodeURIComponent(encoded);
+            if (/^https?:\/\//.test(url)) return `src="${url}"`;
+          } catch { /* ignore */ }
+          return _m;
+        }
+      )
+      // Handle background-image:url(&quot;/res.php?...q=...&quot;) in style attrs
+      .replace(
+        /url\((?:&quot;|["']?)\/res\.php[^)]*?[?&](?:amp;)?q=([^&)"';\s]+)[^)]*?(?:&quot;|["']?)\)/gi,
+        (_m: string, encoded: string) => {
+          try {
+            const url = decodeURIComponent(encoded);
+            if (/^https?:\/\//.test(url)) return `url("${url}")`;
+          } catch { /* ignore */ }
+          return _m;
+        }
+      );
+
     // ── Step 1: stash all http image URLs before DOMPurify can touch them ──
     // DOMPurify v3 sanitises URI attributes and rewrites http src to "#".
     // We swap them for data-ghist-src placeholders first, sanitise, then
     // restore + proxy-rewrite afterwards.
-    const raw = message.htmlBody
+    const raw = unwrapped
       .replace(/(<img[^>]*?)\ssrc=(")(https?:[^"]*?)("|)/gi, '$1 data-ghist-src=$2$3$4')
       .replace(/(<img[^>]*?)\ssrc=(')(https?:[^']*?)('|)/gi, "$1 data-ghist-src=$2$3$4")
       .replace(/(<source[^>]*?)\ssrc=(")(https?:[^"]*?)("|)/gi, '$1 data-ghist-src=$2$3$4');
