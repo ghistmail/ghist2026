@@ -179,6 +179,38 @@ setInterval(async () => {
 // ============================================================
 // Routes
 // ============================================================
+/**
+ * Some email providers (e.g. Guerrilla Mail) rewrite <img src="https://..."> to
+ * their own proxy path: /res.php?r=1&n=img&q=<encoded_original_url>
+ * These relative paths break in our srcdoc iframe. Unwrap them back to the
+ * original absolute URL so our own imgproxy can handle them.
+ */
+function unwrapProviderImageProxies(html: string): string {
+  // Handle src="/res.php?...q=<encoded>..." on img/source tags
+  let result = html.replace(
+    /src=["']\/res\.php[^"']*?[?&](?:amp;)?q=([^&"'\s]+)[^"']*?["']/gi,
+    (_match: string, encoded: string) => {
+      try {
+        const url = decodeURIComponent(encoded);
+        if (/^https?:\/\//.test(url)) return `src="${url}"`;
+      } catch { /* ignore malformed */ }
+      return _match;
+    }
+  );
+  // Handle background-image:url(&quot;/res.php?...q=...&quot;) in style attributes
+  result = result.replace(
+    /url\((?:&quot;|["']?)\/res\.php[^)]*?[?&](?:amp;)?q=([^&)"';\s]+)[^)]*?(?:&quot;|["']?)\)/gi,
+    (_match: string, encoded: string) => {
+      try {
+        const url = decodeURIComponent(encoded);
+        if (/^https?:\/\//.test(url)) return `url("${url}")`;
+      } catch { /* ignore */ }
+      return _match;
+    }
+  );
+  return result;
+}
+
 /** Strip HTML tags and decode common entities to get plain text */
 function stripHtml(html: string): string {
   return html
@@ -460,7 +492,7 @@ export async function registerRoutes(
           fromName: "",
           subject: msg.mail_subject || "(no subject)",
           textBody: stripHtml(msg.mail_body || msg.mail_excerpt || ""),
-          htmlBody: msg.mail_body || "",
+          htmlBody: unwrapProviderImageProxies(msg.mail_body || ""),
           receivedAt: msg.mail_timestamp && msg.mail_timestamp > 0
             ? new Date(msg.mail_timestamp * 1000).toISOString()
             : new Date().toISOString(),
