@@ -472,7 +472,10 @@ export async function registerRoutes(
     // This avoids re-fetching from providers that mark messages read and may not return them again.
     const alreadyCached = await storage.getMessage(messageId);
     if (alreadyCached && alreadyCached.isRead && alreadyCached.htmlBody) {
-      return res.json(alreadyCached);
+      return res.json({
+        ...alreadyCached,
+        htmlBody: unwrapProviderImageProxies(alreadyCached.htmlBody),
+      });
     }
 
     try {
