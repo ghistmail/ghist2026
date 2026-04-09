@@ -105,13 +105,15 @@ function EmailIframe({ html }: { html: string }) {
   }, []);
 
   return (
-    <iframe
-      ref={iframeRef}
-      srcDoc={srcDoc}
-      title="Email content"
-      style={{ width: "100%", height, border: "none", display: "block", background: "white", borderRadius: "8px" }}
-      scrolling="no"
-    />
+    <div style={{ width: "100%", overflowX: "hidden", borderRadius: "8px" }}>
+      <iframe
+        ref={iframeRef}
+        srcDoc={srcDoc}
+        title="Email content"
+        style={{ width: "100%", height, border: "none", display: "block", background: "white", borderRadius: "8px" }}
+        scrolling="no"
+      />
+    </div>
   );
 }
 
@@ -262,14 +264,40 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
     viewport.setAttribute("content", "width=device-width, initial-scale=1.0");
     head.insertBefore(viewport, base.nextSibling);
 
+    // ── Step 9b: strip fixed pixel widths from top-level wrapper tables ──
+    // Inline width="600" attributes override max-width CSS — must be removed
+    // from the outermost 1-2 container tables only (not nested layout tables).
+    const body = doc.body;
+    if (body) {
+      // Direct child tables of <body> and <center> wrappers are the outer shells
+      body.querySelectorAll(
+        ":scope > table, :scope > center > table, :scope > div > table"
+      ).forEach((el) => {
+        const w = el.getAttribute("width");
+        if (w && /^\d+$/.test(w.trim())) {
+          el.removeAttribute("width");
+          // Keep max-width so it still constrains on large screens
+          const existing = (el as HTMLElement).style.cssText;
+          (el as HTMLElement).style.cssText =
+            existing + ";max-width:" + w + "px;width:100%";
+        }
+      });
+    }
+
     // Responsive override: scale wide email tables to fit viewport
     const style = doc.createElement("style");
     style.textContent = [
-      "body { margin: 0 !important; padding: 0 !important; }",
-      "table, td, div, img { max-width: 100% !important; }",
-      "img { height: auto !important; }",
-      // Prevent emails with fixed widths from overflowing
-      "body > table, body > center > table, body > div > table { width: 100% !important; }",
+      // Constrain the document root itself — prevents iframe from growing wider than viewport
+      "html, body { width: 100% !important; max-width: 100% !important;"
+        + " margin: 0 !important; padding: 0 !important;"
+        + " overflow-x: hidden !important; }",
+      // Images and blocks never exceed container
+      "img { max-width: 100% !important; height: auto !important; display: block; }",
+      // Top-level wrapper tables fill width (nested tables keep their own widths)
+      "body > table, body > center > table, body > div > table"
+        + " { width: 100% !important; }",
+      // Cells and divs shrink but don't force nested tables to collapse
+      "td, th, div { max-width: 100% !important; word-break: break-word; }",
     ].join(" ");
     head.appendChild(style);
 
