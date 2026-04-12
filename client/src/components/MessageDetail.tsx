@@ -264,40 +264,41 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
     viewport.setAttribute("content", "width=device-width, initial-scale=1.0");
     head.insertBefore(viewport, base.nextSibling);
 
-    // ── Step 9b: strip fixed pixel widths from top-level wrapper tables ──
-    // Inline width="600" attributes override max-width CSS — must be removed
-    // from the outermost 1-2 container tables only (not nested layout tables).
-    const body = doc.body;
-    if (body) {
-      // Direct child tables of <body> and <center> wrappers are the outer shells
-      body.querySelectorAll(
-        ":scope > table, :scope > center > table, :scope > div > table"
-      ).forEach((el) => {
-        const w = el.getAttribute("width");
-        if (w && /^\d+$/.test(w.trim())) {
-          el.removeAttribute("width");
-          // Keep max-width so it still constrains on large screens
-          const existing = (el as HTMLElement).style.cssText;
-          (el as HTMLElement).style.cssText =
-            existing + ";max-width:" + w + "px;width:100%";
-        }
-      });
+    // ── Step 9b: strip pixel width attrs from ALL tables ──
+    // Inline width="600"/"560" attributes override any CSS width rules.
+    // The only safe way to make nested email tables fluid is to remove the
+    // pixel width attribute from every table (td/th widths are left alone so
+    // column proportion hints are preserved). We stash the largest value as
+    // max-width on the outermost table so it still constrains on wide screens.
+    let maxTablePx = 0;
+    doc.querySelectorAll("table").forEach((el) => {
+      const w = el.getAttribute("width");
+      if (w && /^\d+$/.test(w.trim())) {
+        const px = parseInt(w, 10);
+        if (px > maxTablePx) maxTablePx = px;
+        el.removeAttribute("width");
+      }
+    });
+    // Apply max-width constraint to the outermost wrapper table only
+    const outerTable = doc.body?.querySelector(
+      ":scope > table, :scope > center > table, :scope > div > table"
+    ) as HTMLElement | null;
+    if (outerTable && maxTablePx > 0) {
+      outerTable.style.maxWidth = maxTablePx + "px";
     }
 
-    // Responsive override: scale wide email tables to fit viewport
+    // Responsive override: scale email to viewport
     const style = doc.createElement("style");
     style.textContent = [
-      // Constrain the document root itself — prevents iframe from growing wider than viewport
-      "html, body { width: 100% !important; max-width: 100% !important;"
-        + " margin: 0 !important; padding: 0 !important;"
-        + " overflow-x: hidden !important; }",
-      // Images and blocks never exceed container
-      "img { max-width: 100% !important; height: auto !important; display: block; }",
-      // Top-level wrapper tables fill width (nested tables keep their own widths)
-      "body > table, body > center > table, body > div > table"
-        + " { width: 100% !important; }",
-      // Cells and divs shrink but don't force nested tables to collapse
-      "td, th, div { max-width: 100% !important; word-break: break-word; }",
+      // Root containment — srcdoc document must not exceed iframe width
+      "html, body { width:100%!important; max-width:100%!important;"
+        + " margin:0!important; padding:0!important; overflow-x:hidden!important; }",
+      // All tables fluid — width attrs already stripped above
+      "table { width:100%!important; max-width:100%!important; }",
+      // Images scale down, never overflow
+      "img { max-width:100%!important; height:auto!important; display:block; }",
+      // Cells clip cleanly
+      "td, th { word-break:break-word; box-sizing:border-box; }",
     ].join(" ");
     head.appendChild(style);
 
