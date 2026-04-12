@@ -5,11 +5,63 @@ import { ArrowLeft, Clock, Tag, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getBlogPostBySlug } from "@/lib/blogData";
 import { useLocale, t } from "@/lib/i18n";
+import { useEffect } from "react";
+
+// Detect whether a body paragraph is a subheading.
+// Subheadings: short (≤80 chars), not ending in a period/comma/colon/semi-colon,
+// not starting with a lowercase letter (those are mid-paragraph fragments).
+function isSubheading(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.length === 0 || trimmed.length > 80) return false;
+  if (/[.,;:!?]$/.test(trimmed)) return false;  // ends in punctuation → sentence
+  if (/^[a-z]/.test(trimmed)) return false;       // starts lowercase → fragment
+  // Must have at least 2 words to be a heading
+  if (trimmed.split(/\s+/).length < 2) return false;
+  return true;
+}
 
 export default function BlogPost() {
   const locale = useLocale();
   const params = useParams<{ slug: string }>();
   const post = getBlogPostBySlug(params.slug ?? "");
+
+  // Inject OG image meta tag for this post into document head
+  useEffect(() => {
+    if (!post?.heroImage) return;
+    const ogImgUrl = `https://ghist.email${post.heroImage}`;
+
+    const setMeta = (property: string, content: string) => {
+      let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute("property", property);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+    const setMetaName = (name: string, content: string) => {
+      let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute("name", name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+
+    setMeta("og:image", ogImgUrl);
+    setMeta("og:image:width", "1200");
+    setMeta("og:image:height", "630");
+    setMeta("og:image:alt", post.heroAlt);
+    setMeta("og:title", `${post.title} — Ghist`);
+    setMeta("og:description", post.metaDescription);
+    setMeta("og:type", "article");
+    setMetaName("twitter:card", "summary_large_image");
+    setMetaName("twitter:image", ogImgUrl);
+
+    // Update <title>
+    document.title = `${post.title} — Ghist`;
+  }, [post]);
 
   if (!post) {
     return (
@@ -86,14 +138,37 @@ export default function BlogPost() {
           </p>
         </header>
 
-        {/* Post body */}
+        {/* Hero image */}
+        <div className="rounded-xl overflow-hidden w-full aspect-[1200/630] bg-muted/30">
+          <img
+            src={post.heroImage}
+            alt={post.heroAlt}
+            className="w-full h-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+            data-testid="blog-hero-image"
+          />
+        </div>
+
+        {/* Post body — subheadings bolded, fragments preserved */}
         <div
-          className="space-y-4 text-sm text-muted-foreground leading-relaxed"
+          className="space-y-4 text-sm text-foreground/80 leading-relaxed"
           data-testid="blog-post-body"
         >
-          {post.body.map((paragraph, i) => (
-            <p key={i}>{paragraph}</p>
-          ))}
+          {post.body.map((paragraph, i) =>
+            isSubheading(paragraph) ? (
+              <h2
+                key={i}
+                className="text-base font-bold text-foreground mt-6 mb-1 leading-snug"
+              >
+                {paragraph}
+              </h2>
+            ) : (
+              <p key={i} className="text-sm leading-7">
+                {paragraph}
+              </p>
+            )
+          )}
         </div>
 
         {/* Footer CTA */}

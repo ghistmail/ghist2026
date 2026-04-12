@@ -698,7 +698,17 @@ export async function registerRoutes(
     }),
   };
 
-  function getBlogPostMeta(slug: string): { title: string; description: string } {
+  const BLOG_HERO_IMAGES: Record<string, string> = {
+    "what-is-a-temporary-email-address": "/hero-temp-email.jpg",
+    "travel-without-inbox-clutter": "/hero-travel.jpg",
+    "student-inbox-management": "/hero-student.jpg",
+    "competitor-research-without-inbox-clutter": "/hero-competitor.jpg",
+    "gaming-inbox-clean": "/hero-gaming.jpg",
+    "threat-research-inbox-separation": "/hero-threat.jpg",
+    "gated-reports-without-sales-emails": "/hero-gated.jpg",
+  };
+
+  function getBlogPostMeta(slug: string): { title: string; description: string; heroImage?: string } {
     const titles: Record<string, string> = {
       "what-is-a-temporary-email-address": "What Is a Temporary Email Address and When Should You Use One? — Ghist",
       "travel-without-inbox-clutter": "How to Travel Without Inbox Clutter — Ghist",
@@ -720,6 +730,7 @@ export async function registerRoutes(
     return {
       title: titles[slug] ?? `Blog — Ghist`,
       description: descriptions[slug] ?? "Read this article on the Ghist blog.",
+      heroImage: BLOG_HERO_IMAGES[slug],
     };
   }
 
@@ -727,7 +738,7 @@ export async function registerRoutes(
     res: Response,
     locale: string,
     page: string,
-    extraMeta?: { title?: string; description?: string; canonical?: string }
+    extraMeta?: { title?: string; description?: string; canonical?: string; ogImage?: string }
   ): void {
     const isRTL = RTL_LOCALES.includes(locale);
     const metaFn = PAGE_META[page];
@@ -747,6 +758,11 @@ export async function registerRoutes(
     const safeDesc = description.replace(/"/g, "&quot;").replace(/</g, "&lt;");
     const safeCanonical = canonical.replace(/"/g, "&quot;");
 
+    const ogImageUrl = extraMeta?.ogImage
+      ? `${SITE_BASE}${extraMeta.ogImage}`
+      : `${SITE_BASE}/og-image.png`;
+    const safeOgImage = ogImageUrl.replace(/"/g, "&quot;");
+
     let html = getIndexHtml()
       .replace(
         /<html lang="[^"]*"[^>]*>/,
@@ -759,6 +775,22 @@ export async function registerRoutes(
       .replace(
         /<meta name="description"[^>]*>/,
         `<meta name="description" content="${safeDesc}">`
+      )
+      .replace(
+        /<meta property="og:title"[^>]*>/,
+        `<meta property="og:title" content="${safeTitle}">`
+      )
+      .replace(
+        /<meta property="og:description"[^>]*>/,
+        `<meta property="og:description" content="${safeDesc}">`
+      )
+      .replace(
+        /<meta property="og:image"[^>]*>/,
+        `<meta property="og:image" content="${safeOgImage}">`
+      )
+      .replace(
+        /<meta property="og:url"[^>]*>/,
+        `<meta property="og:url" content="${safeCanonical}">`
       )
       .replace(
         /<link rel="canonical"[^>]*>/,
@@ -930,6 +962,7 @@ ${urls.join("\n")}
           title: meta.title,
           description: meta.description,
           canonical: `${SITE_BASE}/en/blog/${slug}/`,
+          ogImage: meta.heroImage,
         });
       });
       app.get(`/en/blog/:slug/`, (req: Request, res: Response) => {
@@ -939,6 +972,7 @@ ${urls.join("\n")}
           title: meta.title,
           description: meta.description,
           canonical: `${SITE_BASE}/en/blog/${slug}/`,
+          ogImage: meta.heroImage,
         });
       });
     }
