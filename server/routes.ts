@@ -4,6 +4,11 @@ import { storage } from "./storage";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
+import { Resend } from "resend";
+
+// Resend client — only active when RESEND_API_KEY is set
+const resendClient = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const CONTACT_TO = process.env.CONTACT_EMAIL ?? "alexwain+ghist@gmail.com";
 
 // ============================================================
 // Guerrilla Mail API (primary — works from cloud hosting)
@@ -842,7 +847,7 @@ ${urls.join("\n")}
     return true;
   }
 
-  app.post("/api/contact", (req: Request, res: Response) => {
+  app.post("/api/contact", async (req: Request, res: Response) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     if (!checkContactRateLimit(ip)) {
       return res.status(429).json({ error: "Too many requests. Please wait before submitting again." });
@@ -867,9 +872,32 @@ ${urls.join("\n")}
       return res.status(400).json({ error: "Message must be under 2000 characters." });
     }
 
-    // Log to console (no SMTP configured)
+    // Always log to console
     console.log(`[contact] From: ${name.trim()} <${email.trim()}> | Subject: ${subject.trim()} | IP: ${ip}`);
     console.log(`[contact] Message: ${message.trim().substring(0, 200)}`);
+
+    // Send via Resend if API key is configured
+    if (resendClient) {
+      try {
+        await resendClient.emails.send({
+          from: "Ghist Contact <onboarding@resend.dev>",
+          to: CONTACT_TO,
+          replyTo: `${name.trim()} <${email.trim()}>`,
+          subject: `[Ghist Contact] ${subject.trim()}`,
+          html: `<p><strong>From:</strong> ${name.trim()} &lt;${email.trim()}&gt;</p>
+<p><strong>Subject:</strong> ${subject.trim()}</p>
+<hr/>
+<p style="white-space:pre-wrap">${message.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`,
+          text: `From: ${name.trim()} <${email.trim()}>\nSubject: ${subject.trim()}\n\n${message.trim()}`,
+        });
+        console.log("[contact] Email sent via Resend");
+      } catch (err) {
+        console.error("[contact] Resend error:", err);
+        return res.status(500).json({ error: "Failed to send your message. Please try again shortly." });
+      }
+    } else {
+      console.warn("[contact] RESEND_API_KEY not set — email logged only");
+    }
 
     return res.json({ success: true });
   });
