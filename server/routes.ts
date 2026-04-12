@@ -2,6 +2,8 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
 
 // ============================================================
 // Guerrilla Mail API (primary — works from cloud hosting)
@@ -606,6 +608,313 @@ export async function registerRoutes(
     await storage.deleteMailbox(mailbox.id);
     res.json({ success: true });
   });
+
+  // ============================================================
+  // SEO: robots.txt, sitemaps, locale routes, contact form
+  // ============================================================
+
+  const SITE_BASE = "https://ghist.email";
+
+  const ALL_LOCALES = [
+    "en", "zh", "hi", "es", "ar", "fr", "bn", "pt", "ru", "ur",
+    "id", "de", "ja", "vi", "te", "mr", "tr", "ta", "fa", "ko",
+  ];
+
+  const RTL_LOCALES = ["ar", "ur", "fa"];
+
+  const BLOG_SLUGS = [
+    "what-is-a-temporary-email-address",
+    "travel-without-inbox-clutter",
+    "student-inbox-management",
+    "competitor-research-without-inbox-clutter",
+    "gaming-inbox-clean",
+    "threat-research-inbox-separation",
+    "gated-reports-without-sales-emails",
+  ];
+
+  const PAGE_PRIORITIES: Record<string, string> = {
+    home: "1.0",
+    blog: "0.9",
+    faq: "0.8",
+    about: "0.7",
+    privacy: "0.6",
+    terms: "0.6",
+    contact: "0.6",
+  };
+
+  // Determine dist path — works both in dev (ts-node) and production (compiled)
+  const distPath = process.env.NODE_ENV === "production"
+    ? path.resolve(__dirname, "public")
+    : path.resolve(process.cwd(), "dist", "public");
+
+  // Cache index.html content — read lazily on first SEO route request
+  let cachedIndexHtml: string | null = null;
+
+  function getIndexHtml(): string {
+    if (cachedIndexHtml) return cachedIndexHtml;
+    const htmlPath = path.join(distPath, "index.html");
+    if (fs.existsSync(htmlPath)) {
+      cachedIndexHtml = fs.readFileSync(htmlPath, "utf-8");
+      return cachedIndexHtml;
+    }
+    // Fallback minimal shell for dev
+    return `<!DOCTYPE html><html lang="en"><head><title>Ghist</title><meta name="description" content="Free temporary email"><link rel="canonical" href="https://ghist.email/"></head><body><div id="root"></div></body></html>`;
+  }
+
+  // Per-page meta definitions
+  const PAGE_META: Record<string, (locale: string) => { title: string; description: string }> = {
+    home: (locale) => ({
+      title: locale === "en" ? "Free Temporary Email Address | Ghist — Instant & Anonymous" : `Ghist — Free Temporary Email (${locale.toUpperCase()})`,
+      description: "Get a free disposable email address in seconds — no sign-up, no tracking. Perfect for free trials, OTPs, and avoiding spam. Permanently deleted after 24 hours.",
+    }),
+    privacy: (locale) => ({
+      title: `Privacy Policy — Ghist`,
+      description: "Read Ghist's privacy policy. We collect minimal data, store nothing beyond 24 hours, and never track users.",
+    }),
+    terms: (locale) => ({
+      title: `Terms of Service — Ghist`,
+      description: "Read Ghist's terms of service for using our free disposable temporary email service.",
+    }),
+    about: (locale) => ({
+      title: `About Ghist — Free Disposable Email`,
+      description: "Learn about Ghist: a free disposable email service built for privacy. No sign-up, no tracking, auto-deleted after 24 hours.",
+    }),
+    faq: (locale) => ({
+      title: `FAQ — Ghist Temporary Email`,
+      description: "Answers to the most frequently asked questions about Ghist's free temporary email service.",
+    }),
+    blog: (locale) => ({
+      title: `Blog — Ghist`,
+      description: "Tips, guides and articles about temporary email, inbox management, and digital privacy from the Ghist team.",
+    }),
+    contact: (locale) => ({
+      title: `Contact — Ghist`,
+      description: "Get in touch with the Ghist team. We're happy to help with questions, feedback, or bug reports.",
+    }),
+  };
+
+  function getBlogPostMeta(slug: string): { title: string; description: string } {
+    const titles: Record<string, string> = {
+      "what-is-a-temporary-email-address": "What Is a Temporary Email Address and When Should You Use One? — Ghist",
+      "travel-without-inbox-clutter": "How to Travel Without Inbox Clutter — Ghist",
+      "student-inbox-management": "Student Inbox Management With Temporary Email — Ghist",
+      "competitor-research-without-inbox-clutter": "Competitor Research Without Inbox Clutter — Ghist",
+      "gaming-inbox-clean": "Keep Your Gaming Inbox Clean — Ghist",
+      "threat-research-inbox-separation": "Threat Research Inbox Separation — Ghist",
+      "gated-reports-without-sales-emails": "Read Gated Reports Without Sales Emails — Ghist",
+    };
+    const descriptions: Record<string, string> = {
+      "what-is-a-temporary-email-address": "A temporary email address lets you receive emails without exposing your real inbox. Learn what it is, how it works, and the best situations to use one.",
+      "travel-without-inbox-clutter": "Travelling means constant sign-ups, bookings and Wi-Fi prompts. Use temporary email to stay organised, reduce spam, and keep your inbox clear.",
+      "student-inbox-management": "Uni life comes with endless sign-ups, discounts and free trials. Use temporary email to reduce clutter, stay organised, and keep your student inbox useful.",
+      "competitor-research-without-inbox-clutter": "Competitor research often means signing up for reports, newsletters and webinars. Use temporary email to keep your research cleaner, sharper and easier to manage.",
+      "gaming-inbox-clean": "Betas, giveaways, alt accounts and gaming communities create inbox clutter fast. Use temporary email to keep your main gaming inbox clean and easier to protect.",
+      "threat-research-inbox-separation": "If you investigate phishing, suspicious portals or low-trust systems, temporary email helps you keep research contained and your real inbox out of the blast zone.",
+      "gated-reports-without-sales-emails": "Want the report, not the follow-up emails? Use temporary email to access gated content without cluttering your work inbox or triggering endless sales follow-ups.",
+    };
+    return {
+      title: titles[slug] ?? `Blog — Ghist`,
+      description: descriptions[slug] ?? "Read this article on the Ghist blog.",
+    };
+  }
+
+  function serveWithMeta(
+    res: Response,
+    locale: string,
+    page: string,
+    extraMeta?: { title?: string; description?: string; canonical?: string }
+  ): void {
+    const isRTL = RTL_LOCALES.includes(locale);
+    const metaFn = PAGE_META[page];
+    const baseMeta = metaFn ? metaFn(locale) : { title: "Ghist", description: "Free temporary email" };
+    const title = extraMeta?.title ?? baseMeta.title;
+    const description = extraMeta?.description ?? baseMeta.description;
+    const pagePath = page === "home" ? "" : `${page}/`;
+    const canonical = extraMeta?.canonical ?? `${SITE_BASE}/${locale}/${pagePath}`;
+
+    const hreflangLinks = ALL_LOCALES.map((l) => {
+      const href = `${SITE_BASE}/${l}/${pagePath}`;
+      return `<link rel="alternate" hreflang="${l}" href="${href}">`;
+    }).join("\n    ");
+    const xDefault = `<link rel="alternate" hreflang="x-default" href="${SITE_BASE}/en/${pagePath}">`;
+
+    const safeTitle = title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const safeDesc = description.replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const safeCanonical = canonical.replace(/"/g, "&quot;");
+
+    let html = getIndexHtml()
+      .replace(
+        /<html lang="[^"]*"[^>]*>/,
+        `<html lang="${locale}"${isRTL ? ' dir="rtl"' : ""}>`
+      )
+      .replace(
+        /<title>[^<]*<\/title>/,
+        `<title>${safeTitle}</title>`
+      )
+      .replace(
+        /<meta name="description"[^>]*>/,
+        `<meta name="description" content="${safeDesc}">`
+      )
+      .replace(
+        /<link rel="canonical"[^>]*>/,
+        `<link rel="canonical" href="${safeCanonical}">\n    ${hreflangLinks}\n    ${xDefault}`
+      )
+      .replace(
+        "</head>",
+        `<script>window.__GHIST_LOCALE__="${locale}";window.__GHIST_PAGE__="${page}";</script>\n  </head>`
+      );
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  }
+
+  // ── robots.txt
+  app.get("/robots.txt", (_req: Request, res: Response) => {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.send(
+`User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: ${SITE_BASE}/sitemap.xml
+`
+    );
+  });
+
+  // ── Sitemap index
+  app.get("/sitemap.xml", (_req: Request, res: Response) => {
+    const locs = ALL_LOCALES.map(
+      (l) => `  <sitemap>\n    <loc>${SITE_BASE}/sitemap-${l}.xml</loc>\n  </sitemap>`
+    ).join("\n");
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.send(
+`<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${locs}
+</sitemapindex>
+`
+    );
+  });
+
+  // ── Per-locale sitemaps
+  app.get("/sitemap-:locale.xml", (req: Request, res: Response) => {
+    const locale = req.params.locale;
+    if (!ALL_LOCALES.includes(locale)) return res.status(404).end();
+
+    const now = new Date().toISOString().split("T")[0];
+    const pages = ["home", "blog", "faq", "about", "privacy", "terms", "contact"];
+
+    const urls: string[] = pages.map((page) => {
+      const pagePath = page === "home" ? "" : `${page}/`;
+      const priority = PAGE_PRIORITIES[page] ?? "0.6";
+      return `  <url>\n    <loc>${SITE_BASE}/${locale}/${pagePath}</loc>\n    <lastmod>${now}</lastmod>\n    <priority>${priority}</priority>\n  </url>`;
+    });
+
+    // Add blog post URLs for English locale only
+    if (locale === "en") {
+      for (const slug of BLOG_SLUGS) {
+        urls.push(`  <url>\n    <loc>${SITE_BASE}/en/blog/${slug}/</loc>\n    <lastmod>${now}</lastmod>\n    <priority>0.7</priority>\n  </url>`);
+      }
+    }
+
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.send(
+`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.join("\n")}
+</urlset>
+`
+    );
+  });
+
+  // ── Contact form API
+  const contactRateLimit = new Map<string, { count: number; resetAt: number }>();
+
+  function checkContactRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const entry = contactRateLimit.get(ip);
+    if (!entry || now > entry.resetAt) {
+      contactRateLimit.set(ip, { count: 1, resetAt: now + 3_600_000 }); // 1 hour window
+      return true;
+    }
+    if (entry.count >= 3) return false;
+    entry.count++;
+    return true;
+  }
+
+  app.post("/api/contact", (req: Request, res: Response) => {
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    if (!checkContactRateLimit(ip)) {
+      return res.status(429).json({ error: "Too many requests. Please wait before submitting again." });
+    }
+
+    const { name, email, subject, message } = req.body ?? {};
+
+    // Server-side validation
+    if (!name || typeof name !== "string" || name.trim().length < 2) {
+      return res.status(400).json({ error: "Name must be at least 2 characters." });
+    }
+    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return res.status(400).json({ error: "A valid email address is required." });
+    }
+    if (!subject || typeof subject !== "string" || subject.trim().length < 3) {
+      return res.status(400).json({ error: "Subject must be at least 3 characters." });
+    }
+    if (!message || typeof message !== "string" || message.trim().length < 10) {
+      return res.status(400).json({ error: "Message must be at least 10 characters." });
+    }
+    if (message.trim().length > 2000) {
+      return res.status(400).json({ error: "Message must be under 2000 characters." });
+    }
+
+    // Log to console (no SMTP configured)
+    console.log(`[contact] From: ${name.trim()} <${email.trim()}> | Subject: ${subject.trim()} | IP: ${ip}`);
+    console.log(`[contact] Message: ${message.trim().substring(0, 200)}`);
+
+    return res.json({ success: true });
+  });
+
+  // ── Locale home routes  e.g. GET /en/  /zh/
+  for (const locale of ALL_LOCALES) {
+    app.get(`/${locale}`, (req: Request, res: Response) => {
+      serveWithMeta(res, locale, "home");
+    });
+    app.get(`/${locale}/`, (req: Request, res: Response) => {
+      serveWithMeta(res, locale, "home");
+    });
+
+    const internalPages = ["privacy", "terms", "about", "faq", "blog", "contact"];
+    for (const page of internalPages) {
+      app.get(`/${locale}/${page}`, (req: Request, res: Response) => {
+        serveWithMeta(res, locale, page);
+      });
+      app.get(`/${locale}/${page}/`, (req: Request, res: Response) => {
+        serveWithMeta(res, locale, page);
+      });
+    }
+
+    // Blog post routes (en only — other locales fall through to index)
+    if (locale === "en") {
+      app.get(`/en/blog/:slug`, (req: Request, res: Response) => {
+        const slug = req.params.slug;
+        const meta = getBlogPostMeta(slug);
+        serveWithMeta(res, "en", "blog", {
+          title: meta.title,
+          description: meta.description,
+          canonical: `${SITE_BASE}/en/blog/${slug}/`,
+        });
+      });
+      app.get(`/en/blog/:slug/`, (req: Request, res: Response) => {
+        const slug = req.params.slug;
+        const meta = getBlogPostMeta(slug);
+        serveWithMeta(res, "en", "blog", {
+          title: meta.title,
+          description: meta.description,
+          canonical: `${SITE_BASE}/en/blog/${slug}/`,
+        });
+      });
+    }
+  }
 
   return httpServer;
 }
