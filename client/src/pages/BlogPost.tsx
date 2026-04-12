@@ -1,3 +1,4 @@
+import React from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Link, useParams } from "wouter";
@@ -150,25 +151,46 @@ export default function BlogPost() {
           />
         </div>
 
-        {/* Post body — subheadings bolded, fragments preserved */}
+        {/* Post body — subheadings bolded, bullet items grouped, fragments preserved */}
         <div
           className="space-y-4 text-sm text-foreground/80 leading-relaxed"
           data-testid="blog-post-body"
         >
-          {post.body.map((paragraph, i) =>
-            isSubheading(paragraph) ? (
-              <h2
-                key={i}
-                className="text-base font-bold text-foreground mt-6 mb-1 leading-snug"
-              >
-                {paragraph}
-              </h2>
-            ) : (
-              <p key={i} className="text-sm leading-7">
-                {paragraph}
-              </p>
-            )
-          )}
+          {(() => {
+            const elements: React.ReactNode[] = [];
+            let i = 0;
+            while (i < post.body.length) {
+              const paragraph = post.body[i];
+              if (paragraph.startsWith("- ")) {
+                // Collect consecutive bullet items
+                const bullets: string[] = [];
+                while (i < post.body.length && post.body[i].startsWith("- ")) {
+                  bullets.push(post.body[i].slice(2));
+                  i++;
+                }
+                elements.push(
+                  <ul key={`ul-${i}`} className="list-disc pl-5 space-y-1 text-sm leading-7">
+                    {bullets.map((b, bi) => (
+                      <li key={bi}>{b}</li>
+                    ))}
+                  </ul>
+                );
+              } else if (isSubheading(paragraph)) {
+                elements.push(
+                  <h2 key={i} className="text-base font-bold text-foreground mt-6 mb-1 leading-snug">
+                    {paragraph}
+                  </h2>
+                );
+                i++;
+              } else {
+                elements.push(
+                  <p key={i} className="text-sm leading-7">{paragraph}</p>
+                );
+                i++;
+              }
+            }
+            return elements;
+          })()}
         </div>
 
         {/* Footer CTA */}
