@@ -14,12 +14,16 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+/** Returns true if the current local hour warrants dark mode (18:00–05:59). */
+function shouldBeDark(): boolean {
+  const hour = new Date().getHours();
+  return hour >= 18 || hour < 6;
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  });
+  const [theme, setTheme] = useState<Theme>(() =>
+    shouldBeDark() ? "dark" : "light"
+  );
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");

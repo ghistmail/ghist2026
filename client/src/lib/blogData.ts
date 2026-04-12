@@ -13,6 +13,8 @@ export interface BlogPost {
   category: string;
   heroImage: string;  // public/ path, e.g. "/hero-temp-email.jpg"
   heroAlt: string;
+  bodyImage: string;   // public/ path for mid-article image
+  bodyImageAlt: string;
   body: string[];
 }
 
@@ -27,6 +29,8 @@ export const blogPosts: BlogPost[] = [
     category: "Explainers",
     heroImage: "/hero-temp-email.jpg",
     heroAlt: "Close-up of a smartphone showing the Apple Mail app with 2 unread messages",
+    bodyImage: "/body-temp-email.jpg",
+    bodyImageAlt: "Developer typing code on a laptop, illustrating the simplicity of generating a temporary email",
     body: [
     "A temporary email address is exactly what it sounds like: an email address that exists for a limited period, receives messages during that window, and then disappears entirely. Unlike a standard email account, there is no registration process, no password to set, no identity attached to it. You open a service like Ghist, an address is generated for you automatically, and from that moment it is ready to receive email.",
     "The address works like any other email address in terms of how messages are delivered to it. If you sign up for a website using a temporary address, confirmation emails, welcome messages, and newsletters will all arrive there just as they would in a regular inbox. The difference is that the inbox is isolated, anonymous, and set to expire. At Ghist, that window is 24 hours. After that, the address and everything it received are permanently gone.",
@@ -50,6 +54,8 @@ export const blogPosts: BlogPost[] = [
     category: "Use Cases",
     heroImage: "/hero-travel.jpg",
     heroAlt: "Airplane wing against a warm sunset sky above the clouds",
+    bodyImage: "/body-travel.jpg",
+    bodyImageAlt: "Open road with mountains in the background, representing the freedom of travelling without digital clutter",
     body: [
     "When you travel, you make digital decisions much faster than you do at home.",
     "You do not sit there calmly weighing up whether the airport Wi-Fi portal deserves your real email address. You are tired, half-watching the departures board, trying to message someone, download a boarding pass, or check whether your gate has moved again. You type in whatever gets you connected.",
@@ -181,6 +187,8 @@ export const blogPosts: BlogPost[] = [
     category: "Use Cases",
     heroImage: "/hero-student.jpg",
     heroAlt: "Student studying at a desk with a laptop and open notebook",
+    bodyImage: "/body-student.jpg",
+    bodyImageAlt: "Student writing notes at a library desk, surrounded by books and a laptop",
     body: [
     "If you are at uni, your email inbox probably does far more work than it should.",
     "It is not just a place where messages arrive. It is where subject outlines land, where tutors reply, where deadline reminders show up, where assignment submissions get confirmed, where group project chaos unfolds, where internship applications live, where the uni sends obscure administrative notices that somehow become urgent with no warning, and where all the bits of your academic life are supposed to stay visible enough that you do not miss something important.",
@@ -295,6 +303,8 @@ export const blogPosts: BlogPost[] = [
     category: "Use Cases",
     heroImage: "/hero-competitor.jpg",
     heroAlt: "Business analytics dashboard with charts and graphs on a screen",
+    bodyImage: "/body-competitor.jpg",
+    bodyImageAlt: "Laptop showing analytics charts on a desk, representing structured competitor research",
     body: [
     "If competitor research is part of your job, you already know the work is messier than people make it sound.",
     "On paper, it looks tidy. Audit the messaging. Track the newsletter. Download the report. Join the webinar. Review the landing pages. Map the nurture sequence. Compare the offers. Observe the pricing logic. Note the positioning. Pull out the useful patterns.",
@@ -397,6 +407,8 @@ export const blogPosts: BlogPost[] = [
     category: "Use Cases",
     heroImage: "/hero-gaming.jpg",
     heroAlt: "Gaming setup with RGB keyboard glowing in a dark room",
+    bodyImage: "/body-gaming.jpg",
+    bodyImageAlt: "Close-up of hands holding a gaming controller, representing the fun side of gaming culture",
     body: [
     "If you play games regularly, you probably sign up for more things than you realise.",
     "Not just games. Not just storefronts. Not just one launcher and one account and that is the end of it. Gaming now runs through a sprawling mess of betas, early-access forms, third-party stat tools, tournament platforms, Discord servers, giveaway pages, creator promos, reward systems, modding communities, event registrations and side accounts you made for reasons that felt completely sensible at the time.",
@@ -500,6 +512,8 @@ export const blogPosts: BlogPost[] = [
     category: "Security",
     heroImage: "/hero-threat.jpg",
     heroAlt: "Dark cybersecurity background with glowing code and digital threat indicators",
+    bodyImage: "/body-threat.jpg",
+    bodyImageAlt: "Cybersecurity professional monitoring screens with code, representing structured threat analysis",
     body: [
     "If you work in cybersecurity, you already spend a lot of time thinking about separation.",
     "You separate environments. You isolate machines. You contain credentials. You segment networks. You use sandboxes because you do not trust unknown code, unknown payloads or unknown infrastructure to behave nicely once they touch something real. That instinct is one of the foundations of good security work. If the environment is low-trust, you do not casually bring high-value assets into it.",
@@ -601,6 +615,8 @@ export const blogPosts: BlogPost[] = [
     category: "Use Cases",
     heroImage: "/hero-gated.jpg",
     heroAlt: "Office desk with stacked documents, reports and a laptop showing analytics",
+    bodyImage: "/body-gated.jpg",
+    bodyImageAlt: "Person reviewing financial documents at a clean desk, representing access to gated research content",
     body: [
     "You download one report and suddenly someone wants to “jump on a quick call”.",
     "That is the whole problem with gated content in one sentence.",

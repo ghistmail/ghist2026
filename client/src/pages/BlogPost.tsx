@@ -151,15 +151,32 @@ export default function BlogPost() {
           />
         </div>
 
-        {/* Post body — subheadings bolded, bullet items grouped, fragments preserved */}
+        {/* Post body — subheadings bolded, bullet items grouped, mid-article image injected */}
         <div
           className="space-y-4 text-sm text-foreground/80 leading-relaxed"
           data-testid="blog-post-body"
         >
           {(() => {
             const elements: React.ReactNode[] = [];
+            // Insert body image after ~40% of paragraphs
+            const insertAt = Math.floor(post.body.length * 0.40);
+            let imageInserted = false;
             let i = 0;
             while (i < post.body.length) {
+              // Inject body image at the right paragraph boundary
+              if (!imageInserted && i >= insertAt) {
+                imageInserted = true;
+                elements.push(
+                  <div key="body-image" className="rounded-xl overflow-hidden w-full my-6">
+                    <img
+                      src={post.bodyImage}
+                      alt={post.bodyImageAlt}
+                      className="w-full h-64 object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                );
+              }
               const paragraph = post.body[i];
               if (paragraph.startsWith("- ")) {
                 // Collect consecutive bullet items
