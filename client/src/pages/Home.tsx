@@ -370,7 +370,7 @@ export default function Home() {
                 Three steps. Zero effort.
               </h2>
               <p className="text-sm text-muted-foreground font-body mt-2 max-w-lg leading-relaxed">
-                No account, no profile, no trace. Ghist gives you a disposable inbox the moment you need it — and makes it disappear just as easily.
+                No account, no profile, no footprint. Ghist gives you a disposable inbox the moment you need it — and makes it disappear just as easily.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -413,7 +413,7 @@ export default function Home() {
                 Why Ghist?
               </p>
               <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">
-                Built for people who'd rather not be tracked.
+                Built for people who’d rather share less.
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -422,10 +422,10 @@ export default function Home() {
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <EyeOff className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
                   </div>
-                  <h3 className="text-sm font-display font-semibold text-foreground">Zero tracking, ever</h3>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Temporary by default.</h3>
                 </div>
                 <p className="text-xs text-muted-foreground font-body leading-relaxed">
-                  We don't log IP addresses, browsing behaviour, or anything personally identifiable. Your ghost address is yours alone — not ours.
+                  No accounts, no permanent profiles, and no unnecessary data. Your ghost address is yours when you need it—and gone when you don’t.
                 </p>
               </div>
               <div className="bg-card rounded-xl p-5 space-y-2">
