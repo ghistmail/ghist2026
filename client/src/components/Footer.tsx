@@ -73,18 +73,6 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Ghost footer decorative image */}
-      <div className="w-full overflow-hidden" aria-hidden="true">
-        <img
-          src="/ghost-footer.jpg"
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          draggable="false"
-          className="w-full h-auto object-cover opacity-40 dark:opacity-20 select-none pointer-events-none"
-          style={{ maxHeight: "200px", objectPosition: "center top" }}
-        />
-      </div>
     </footer>
   );
 }
