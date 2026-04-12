@@ -29,24 +29,34 @@ export function Header() {
 
         {/* Nav right */}
         <div className="flex items-center gap-0.5">
-          <Link href="/privacy">
+          <Link href="/about">
             <Button
               variant="ghost"
               size="sm"
               className="text-muted-foreground hover:text-foreground text-xs font-body hidden sm:flex"
-              data-testid="link-privacy"
+              data-testid="link-about"
             >
-              Privacy
+              About
             </Button>
           </Link>
-          <Link href="/terms">
+          <Link href="/blog">
             <Button
               variant="ghost"
               size="sm"
               className="text-muted-foreground hover:text-foreground text-xs font-body hidden sm:flex"
-              data-testid="link-terms"
+              data-testid="link-blog"
             >
-              Terms
+              Blog
+            </Button>
+          </Link>
+          <Link href="/faq">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground text-xs font-body hidden sm:flex"
+              data-testid="link-faq"
+            >
+              FAQ
             </Button>
           </Link>
 

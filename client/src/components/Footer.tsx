@@ -18,27 +18,6 @@ export function Footer() {
           {/* Navigation links */}
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Footer navigation">
             <Link
-              href="/about"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="footer-link-about"
-            >
-              About
-            </Link>
-            <Link
-              href="/blog"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="footer-link-blog"
-            >
-              Blog
-            </Link>
-            <Link
-              href="/faq"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="footer-link-faq"
-            >
-              FAQ
-            </Link>
-            <Link
               href="/contact"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               data-testid="footer-link-contact"

@@ -22,6 +22,17 @@ export default function About() {
           <h1 className="text-xl font-semibold tracking-tight">{t(locale, "about.title")}</h1>
         </div>
 
+        {/* Hero image */}
+        <div className="rounded-xl overflow-hidden w-full">
+          <img
+            src="/og-image.jpg"
+            alt="Ghist — temporary email, ephemeral by design"
+            className="w-full object-cover"
+            style={{ maxHeight: "340px" }}
+            loading="eager"
+          />
+        </div>
+
         <div className="space-y-6 text-sm text-muted-foreground leading-relaxed">
           <p className="text-base text-foreground leading-relaxed">
             {t(locale, "about.description")}

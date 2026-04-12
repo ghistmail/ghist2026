@@ -760,7 +760,7 @@ export async function registerRoutes(
 
     const ogImageUrl = extraMeta?.ogImage
       ? `${SITE_BASE}${extraMeta.ogImage}`
-      : `${SITE_BASE}/og-image.png`;
+      : `${SITE_BASE}/og-image.jpg`;
     const safeOgImage = ogImageUrl.replace(/"/g, "&quot;");
 
     let html = getIndexHtml()
