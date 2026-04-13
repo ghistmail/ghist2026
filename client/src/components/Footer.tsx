@@ -20,41 +20,12 @@ export function Footer() {
             className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-x-6 sm:gap-y-2"
             aria-label="Footer navigation"
           >
-            <Link
-              href="/contact"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0"
-              data-testid="footer-link-contact"
-            >
-              Contact
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0"
-              data-testid="footer-link-privacy"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/terms"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0"
-              data-testid="footer-link-terms"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/faq"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0"
-              data-testid="footer-link-faq"
-            >
-              FAQ
-            </Link>
-            <Link
-              href="/blog"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0"
-              data-testid="footer-link-blog"
-            >
-              Blog
-            </Link>
+            <Link href="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0" data-testid="footer-link-about">About</Link>
+            <Link href="/blog" className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0" data-testid="footer-link-blog">Blog</Link>
+            <Link href="/faq" className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0" data-testid="footer-link-faq">FAQ</Link>
+            <Link href="/contact" className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0" data-testid="footer-link-contact">Contact</Link>
+            <Link href="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0" data-testid="footer-link-privacy">Privacy</Link>
+            <Link href="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0" data-testid="footer-link-terms">Terms</Link>
           </nav>
         </div>
 
