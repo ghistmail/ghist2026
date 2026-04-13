@@ -33,7 +33,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-foreground text-xs font-body hidden sm:flex"
+              className="text-muted-foreground hover:text-foreground text-xs font-body flex"
               data-testid="link-about"
             >
               About
@@ -43,7 +43,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-foreground text-xs font-body hidden sm:flex"
+              className="text-muted-foreground hover:text-foreground text-xs font-body flex"
               data-testid="link-blog"
             >
               Blog
