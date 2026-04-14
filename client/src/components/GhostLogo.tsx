@@ -67,28 +67,51 @@ export function GhostIcon({ size = 32, animated = true, className = "" }: GhostI
 }
 
 /**
- * Full Ghist lockup — image wordmark logo.
- * Uses the uploaded brand logo (white bg) with dark:invert for dark mode.
- * Aspect ratio: 360×120 = 3:1
+ * Full Ghist lockup — floating ghost icon + wordmark image side by side.
+ * Logo PNG is transparent; dark:invert flips it for dark mode.
  */
 interface GhistLogoFullProps {
-  size?: number;      // controls height in px
-  animated?: boolean; // retained for API compat (unused)
+  size?: number;
+  animated?: boolean;
   className?: string;
 }
 
-export function GhistLogoFull({ size = 28, className = "" }: GhistLogoFullProps) {
-  const h = size * 1.4; // slightly taller than icon-only mode was
-  const w = h * 3;     // 3:1 aspect ratio
+export function GhistLogoFull({ size = 28, animated = true, className = "" }: GhistLogoFullProps) {
+  // Wordmark: 360×120 = 3:1 ratio. Height matches ghost icon size.
+  const logoH = size;
+  const logoW = logoH * 3;
   return (
-    <img
-      src="/ghist-logo.png"
-      alt="Ghist"
-      width={w}
-      height={h}
-      className={`object-contain dark:invert ${className}`}
-      style={{ display: "block", width: w, height: h }}
-      draggable={false}
-    />
+    <div className={`flex items-center gap-2 ${className}`}>
+      {/* Floating ghost icon */}
+      <div className="inline-flex flex-col items-center" style={{ width: size }} aria-hidden="true">
+        <div
+          style={{
+            animation: animated ? "ghost-float 3s ease-in-out infinite" : undefined,
+            willChange: "transform",
+            lineHeight: 0,
+          }}
+        >
+          <img
+            src={ghostImgPath}
+            alt=""
+            width={size}
+            height={size}
+            className="dark:invert"
+            style={{ objectFit: "contain", display: "block" }}
+          />
+        </div>
+        <ShadowEllipse size={size} animated={animated} />
+      </div>
+      {/* Wordmark image */}
+      <img
+        src="/ghist-logo.png"
+        alt="Ghist"
+        width={logoW}
+        height={logoH}
+        className="object-contain dark:invert"
+        style={{ display: "block", width: logoW, height: logoH }}
+        draggable={false}
+      />
+    </div>
   );
 }
