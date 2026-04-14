@@ -67,42 +67,28 @@ export function GhostIcon({ size = 32, animated = true, className = "" }: GhostI
 }
 
 /**
- * Full Ghist lockup — ghost icon (with shadow ellipse) + "Ghist" wordmark.
+ * Full Ghist lockup — image wordmark logo.
+ * Uses the uploaded brand logo (white bg) with dark:invert for dark mode.
+ * Aspect ratio: 360×120 = 3:1
  */
 interface GhistLogoFullProps {
-  size?: number;
-  animated?: boolean;
+  size?: number;      // controls height in px
+  animated?: boolean; // retained for API compat (unused)
   className?: string;
 }
 
-export function GhistLogoFull({ size = 28, animated = true, className = "" }: GhistLogoFullProps) {
+export function GhistLogoFull({ size = 28, className = "" }: GhistLogoFullProps) {
+  const h = size * 1.4; // slightly taller than icon-only mode was
+  const w = h * 3;     // 3:1 aspect ratio
   return (
-    <div className={`flex items-end gap-2 ${className}`}>
-      <div className="inline-flex flex-col items-center" style={{ width: size }}>
-        <div
-          style={{
-            animation: animated ? "ghost-float 3s ease-in-out infinite" : undefined,
-            willChange: "transform",
-            lineHeight: 0,
-          }}
-        >
-          <img
-            src={ghostImgPath}
-            alt=""
-            width={size}
-            height={size}
-            className="dark:invert"
-            style={{ objectFit: "contain", display: "block" }}
-          />
-        </div>
-        <ShadowEllipse size={size} animated={animated} />
-      </div>
-      <span
-        className="font-display font-bold text-foreground leading-none"
-        style={{ fontSize: size * 0.9, paddingBottom: Math.round(size * 0.12) }}
-      >
-        Ghist
-      </span>
-    </div>
+    <img
+      src="/ghist-logo.png"
+      alt="Ghist"
+      width={w}
+      height={h}
+      className={`object-contain dark:invert ${className}`}
+      style={{ display: "block", width: w, height: h }}
+      draggable={false}
+    />
   );
 }

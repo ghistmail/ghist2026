@@ -9,7 +9,9 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-8 mb-8 text-center sm:text-left">
           {/* Brand block */}
           <div className="flex flex-col gap-3">
-            <GhistLogoFull size={22} animated={false} className="opacity-60" />
+            <Link href="/" aria-label="Ghist Homepage" className="no-underline">
+              <GhistLogoFull size={22} className="opacity-80" />
+            </Link>
             <p className="text-xs text-muted-foreground font-body leading-relaxed max-w-[280px]">
               Communication without the digital footprint. Ephemeral by design.
             </p>

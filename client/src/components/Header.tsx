@@ -23,8 +23,8 @@ export function Header() {
     >
       <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4 overflow-visible">
         {/* Animated ghost + wordmark — left on desktop, will be part of centred hero on mobile */}
-        <Link href="/" className="flex items-center no-underline" data-testid="text-brand">
-          <GhistLogoFull size={28} animated={true} />
+        <Link href="/" className="flex items-center no-underline" aria-label="Ghist Homepage" data-testid="text-brand">
+          <GhistLogoFull size={28} />
         </Link>
 
         {/* Nav right */}
