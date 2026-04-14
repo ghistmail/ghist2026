@@ -945,6 +945,16 @@ ${urls.join("\n")}
     return res.json({ success: true });
   });
 
+  // ── Bare-path 301 redirects → canonical /en/ URLs for Googlebot + clean links
+  const BARE_PAGES = ["about", "faq", "blog", "privacy", "terms", "contact"];
+  for (const page of BARE_PAGES) {
+    app.get(`/${page}`, (_req: Request, res: Response) => res.redirect(301, `/en/${page}`));
+    app.get(`/${page}/`, (_req: Request, res: Response) => res.redirect(301, `/en/${page}/`));
+  }
+  // Blog post bare-path redirects
+  app.get("/blog/:slug", (req: Request, res: Response) => res.redirect(301, `/en/blog/${req.params.slug}`));
+  app.get("/blog/:slug/", (req: Request, res: Response) => res.redirect(301, `/en/blog/${req.params.slug}/`));
+
   // ── Locale home routes  e.g. GET /en/  /zh/
   for (const locale of ALL_LOCALES) {
     app.get(`/${locale}`, (req: Request, res: Response) => {

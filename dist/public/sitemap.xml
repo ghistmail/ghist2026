@@ -1,57 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ghist.email/</loc>
+    <loc>https://ghist.email/en/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://ghist.email/about</loc>
+    <loc>https://ghist.email/en/about/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ghist.email/faq</loc>
+    <loc>https://ghist.email/en/faq/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ghist.email/blog</loc>
+    <loc>https://ghist.email/en/blog/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://ghist.email/blog/what-is-a-temporary-email-address</loc>
+    <loc>https://ghist.email/en/privacy/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://ghist.email/en/terms/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://ghist.email/en/contact/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://ghist.email/en/blog/what-is-a-temporary-email-address/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ghist.email/blog/travel-without-inbox-clutter</loc>
+    <loc>https://ghist.email/en/blog/travel-without-inbox-clutter/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ghist.email/blog/student-inbox-management</loc>
+    <loc>https://ghist.email/en/blog/student-inbox-management/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ghist.email/blog/competitor-research-without-inbox-clutter</loc>
+    <loc>https://ghist.email/en/blog/competitor-research-without-inbox-clutter/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ghist.email/blog/gaming-inbox-clean</loc>
+    <loc>https://ghist.email/en/blog/gaming-inbox-clean/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ghist.email/blog/threat-research-inbox-separation</loc>
+    <loc>https://ghist.email/en/blog/threat-research-inbox-separation/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ghist.email/blog/gated-reports-without-sales-emails</loc>
+    <loc>https://ghist.email/en/blog/gated-reports-without-sales-emails/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
