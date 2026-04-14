@@ -734,11 +734,22 @@ export async function registerRoutes(
     };
   }
 
+  /** Parse Accept-Language header → best matching locale code, or null */
+  function parseBrowserLocale(acceptLanguage: string | undefined): string | null {
+    if (!acceptLanguage) return null;
+    const tags = acceptLanguage.split(",").map((s) => s.split(";")[0].trim().toLowerCase().slice(0, 2));
+    for (const tag of tags) {
+      if (ALL_LOCALES.includes(tag as any)) return tag;
+    }
+    return null;
+  }
+
   function serveWithMeta(
     res: Response,
     locale: string,
     page: string,
-    extraMeta?: { title?: string; description?: string; canonical?: string; ogImage?: string }
+    extraMeta?: { title?: string; description?: string; canonical?: string; ogImage?: string },
+    req?: Request
   ): void {
     const isRTL = RTL_LOCALES.includes(locale);
     const metaFn = PAGE_META[page];
@@ -798,7 +809,7 @@ export async function registerRoutes(
       )
       .replace(
         "</head>",
-        `<script>window.__GHIST_LOCALE__="${locale}";window.__GHIST_PAGE__="${page}";</script>\n  </head>`
+        `<script>window.__GHIST_LOCALE__="${locale}";window.__GHIST_PAGE__="${page}";window.__GHIST_BROWSER_LOCALE__="${parseBrowserLocale(req?.headers["accept-language"]) ?? ""}";</script>\n  </head>`
       );
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -937,19 +948,19 @@ ${urls.join("\n")}
   // ── Locale home routes  e.g. GET /en/  /zh/
   for (const locale of ALL_LOCALES) {
     app.get(`/${locale}`, (req: Request, res: Response) => {
-      serveWithMeta(res, locale, "home");
+      serveWithMeta(res, locale, "home", undefined, req);
     });
     app.get(`/${locale}/`, (req: Request, res: Response) => {
-      serveWithMeta(res, locale, "home");
+      serveWithMeta(res, locale, "home", undefined, req);
     });
 
     const internalPages = ["privacy", "terms", "about", "faq", "blog", "contact"];
     for (const page of internalPages) {
       app.get(`/${locale}/${page}`, (req: Request, res: Response) => {
-        serveWithMeta(res, locale, page);
+        serveWithMeta(res, locale, page, undefined, req);
       });
       app.get(`/${locale}/${page}/`, (req: Request, res: Response) => {
-        serveWithMeta(res, locale, page);
+        serveWithMeta(res, locale, page, undefined, req);
       });
     }
 
@@ -963,7 +974,7 @@ ${urls.join("\n")}
           description: meta.description,
           canonical: `${SITE_BASE}/en/blog/${slug}/`,
           ogImage: meta.heroImage,
-        });
+        }, req);
       });
       app.get(`/en/blog/:slug/`, (req: Request, res: Response) => {
         const slug = req.params.slug;
@@ -973,7 +984,7 @@ ${urls.join("\n")}
           description: meta.description,
           canonical: `${SITE_BASE}/en/blog/${slug}/`,
           ogImage: meta.heroImage,
-        });
+        }, req);
       });
     }
   }
