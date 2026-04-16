@@ -451,8 +451,8 @@ export default function Home() {
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">Blog</p>
               <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">Latest articles</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {blogPosts.slice(0, 4).map((post) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {blogPosts.slice(0, 3).map((post) => (
                 <Link
                   key={post.slug}
                   href={`/en/blog/${post.slug}`}
@@ -481,7 +481,7 @@ export default function Home() {
             </div>
             <div className="mt-4 text-right">
               <Link href="/en/blog" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
-                View all articles \u2192
+                View all articlesu2192
               </Link>
             </div>
           </div>
