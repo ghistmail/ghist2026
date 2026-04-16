@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "wouter";
+import { blogPosts } from "@/lib/blogData";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type Mailbox, type Message } from "@shared/schema";
@@ -442,7 +444,50 @@ export default function Home() {
             </div>
           </div>
         </section>
-        {/* ── FAQ section ───────────────────────────────────────── */}
+            {/* ── Latest blogs section */}
+        <section className="px-5 sm:px-8 py-10">
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-6">
+              <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">Blog</p>
+              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">Latest articles</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {blogPosts.slice(0, 4).map((post) => (
+                <Link
+                  key={post.slug}
+                  href={`/en/blog/${post.slug}`}
+                  className="group block no-underline"
+                >
+                  <div className="rounded-lg overflow-hidden border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors h-full flex flex-col">
+                    <div className="aspect-video w-full bg-muted overflow-hidden">
+                      {post.heroImage ? (
+                        <img
+                          src={post.heroImage}
+                          alt={post.heroAlt ?? post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted" />
+                      )}
+                    </div>
+                    <div className="p-3 flex-1">
+                      <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">{post.title}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">{post.readTime}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-4 text-right">
+              <Link href="/en/blog" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
+                View all articles \u2192
+              </Link>
+            </div>
+          </div>
+        </section>
+
+    {/* ── FAQ section ───────────────────────────────────────── */}
         <section className="bg-muted/20 px-5 sm:px-8 py-10">
           <div className="max-w-3xl mx-auto">
             <div className="mb-6">

@@ -19,7 +19,7 @@ export function Footer() {
 
           {/* Navigation links — desktop: row, mobile: column */}
           <nav
-            className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-x-6 sm:gap-y-2"
+            className="flex flex-row flex-wrap justify-start items-center gap-x-4 gap-y-3 overflow-x-auto"
             aria-label="Footer navigation"
           >
             <Link href="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center sm:min-h-0" data-testid="footer-link-about">About</Link>
@@ -34,7 +34,7 @@ export function Footer() {
         {/* Bottom row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="text-[11px] text-muted-foreground/70 font-body">
-            All data auto-deleted after 24 hours. No signup, no tracking.
+            All data auto-deleted after 24 hours. No signup, no history.
           </p>
           <p className="text-[11px] text-muted-foreground/60 font-body">
             Created by Alex Wain
