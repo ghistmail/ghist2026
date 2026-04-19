@@ -29,9 +29,9 @@ const STATS_FILE = path.join("/tmp", "ghist-stats.json");
 // Conservative baseline representing usage before this instrumentation shipped.
 // Ratio: ~3.8 emails/inbox, ~87% of received emails eventually auto-deleted.
 const SEED: StoredStats = {
-  inboxesCreated: 4820,
-  emailsReceived: 18340,
-  messagesDeleted: 15955, // floor(18340 * 0.87) — seeded to match receive/delete ratio
+  inboxesCreated: 0,
+  emailsReceived: 0,
+  messagesDeleted: 0,
 };
 
 // All three are stored independently — messagesDeleted is a real measured counter,
