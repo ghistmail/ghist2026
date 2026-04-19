@@ -699,33 +699,33 @@ export async function registerRoutes(
   };
 
   const BLOG_HERO_IMAGES: Record<string, string> = {
-    "what-is-a-temporary-email-address": "/hero-temp-email.jpg",
-    "travel-without-inbox-clutter": "/hero-travel.jpg",
-    "student-inbox-management": "/hero-student.jpg",
-    "competitor-research-without-inbox-clutter": "/hero-competitor.jpg",
-    "gaming-inbox-clean": "/hero-gaming.jpg",
-    "threat-research-inbox-separation": "/hero-threat.jpg",
-    "gated-reports-without-sales-emails": "/hero-gated.jpg",
+    "when-to-use-temporary-email": "/hero-temp-email.jpg",
+    "travel-inbox-temp-email": "/hero-travel.jpg",
+    "student-inbox-free-trials": "/hero-student.jpg",
+    "competitor-research-email": "/hero-competitor.jpg",
+    "gaming-inbox-temp-email": "/hero-gaming.jpg",
+    "threat-research-email": "/hero-threat.jpg",
+    "gated-reports-temp-email": "/hero-gated.jpg",
   };
 
   function getBlogPostMeta(slug: string): { title: string; description: string; heroImage?: string } {
     const titles: Record<string, string> = {
-      "what-is-a-temporary-email-address": "What Is a Temporary Email Address and When Should You Use One? — Ghist",
-      "travel-without-inbox-clutter": "How to Travel Without Inbox Clutter — Ghist",
-      "student-inbox-management": "Student Inbox Management With Temporary Email — Ghist",
-      "competitor-research-without-inbox-clutter": "Competitor Research Without Inbox Clutter — Ghist",
-      "gaming-inbox-clean": "Keep Your Gaming Inbox Clean — Ghist",
-      "threat-research-inbox-separation": "Threat Research Inbox Separation — Ghist",
-      "gated-reports-without-sales-emails": "Read Gated Reports Without Sales Emails — Ghist",
+      "when-to-use-temporary-email": "Stop Giving Every Random Signup Your Real Inbox — Ghist",
+      "travel-inbox-temp-email": "Stop Letting Every Trip Wreck Your Inbox — Ghist",
+      "student-inbox-free-trials": "Drowning in Free for Students? Take Your Inbox Back — Ghist",
+      "competitor-research-email": "How to Spy on Competitors Without Sacrificing Your Inbox — Ghist",
+      "gaming-inbox-temp-email": "The One Inbox Mistake That Costs Gamers Their Accounts — Ghist",
+      "threat-research-email": "Doing Threat Research? Stop Using the Same Inbox as Your Bank — Ghist",
+      "gated-reports-temp-email": "Stop Letting One PDF Turn Into 20 Sales Emails — Ghist",
     };
     const descriptions: Record<string, string> = {
-      "what-is-a-temporary-email-address": "A temporary email address lets you receive emails without exposing your real inbox. Learn what it is, how it works, and the best situations to use one.",
-      "travel-without-inbox-clutter": "Travelling means constant sign-ups, bookings and Wi-Fi prompts. Use temporary email to stay organised, reduce spam, and keep your inbox clear.",
-      "student-inbox-management": "Uni life comes with endless sign-ups, discounts and free trials. Use temporary email to reduce clutter, stay organised, and keep your student inbox useful.",
-      "competitor-research-without-inbox-clutter": "Competitor research often means signing up for reports, newsletters and webinars. Use temporary email to keep your research cleaner, sharper and easier to manage.",
-      "gaming-inbox-clean": "Betas, giveaways, alt accounts and gaming communities create inbox clutter fast. Use temporary email to keep your main gaming inbox clean and easier to protect.",
-      "threat-research-inbox-separation": "If you investigate phishing, suspicious portals or low-trust systems, temporary email helps you keep research contained and your real inbox out of the blast zone.",
-      "gated-reports-without-sales-emails": "Want the report, not the follow-up emails? Use temporary email to access gated content without cluttering your work inbox or triggering endless sales follow-ups.",
+      "when-to-use-temporary-email": "Need the code, download or free trial without the spam? A temporary email keeps your real inbox out of low-stakes signups, one-off downloads and throwaway accounts.",
+      "travel-inbox-temp-email": "Travel without wrecking your inbox. Use temporary email for Wi-Fi, apps and member rates so your real address stays clean, safe and easy to manage.",
+      "student-inbox-free-trials": "Uni life is full of free trials and student-only perks that want your email. Use temporary email to keep your study inbox clear while you still try new tools.",
+      "competitor-research-email": "You need to see how competitors pitch, not end up in their sales funnel. Use temporary email to do deep research without turning your work inbox into a prospect list.",
+      "gaming-inbox-temp-email": "Your gaming email now holds real money, accounts and saves. Use temporary email for key drops, betas and sketchy sites so your core gaming inbox stays secure.",
+      "threat-research-email": "If you investigate phishing, shady tools or low-trust sites, use temporary email to keep research contained and your real inbox out of the blast zone.",
+      "gated-reports-temp-email": "Want the report, not the follow-up emails? Use temporary email to access gated content without cluttering your work inbox or triggering endless sales follow-ups.",
     };
     return {
       title: titles[slug] ?? `Blog — Ghist`,
@@ -943,6 +943,22 @@ ${urls.join("\n")}
     }
 
     return res.json({ success: true });
+  });
+
+  // Old blog slug redirects → new canonical slugs
+  const OLD_BLOG_SLUG_MAP: Record<string, string> = {
+    "what-is-a-temporary-email-address": "when-to-use-temporary-email",
+    "travel-without-inbox-clutter": "travel-inbox-temp-email",
+    "student-inbox-management": "student-inbox-free-trials",
+    "competitor-research-without-inbox-clutter": "competitor-research-email",
+    "gaming-inbox-clean": "gaming-inbox-temp-email",
+    "threat-research-inbox-separation": "threat-research-email",
+    "gated-reports-without-sales-emails": "gated-reports-temp-email",
+  };
+  app.get("/en/blog/:slug", (req: Request, res: Response, next: NextFunction) => {
+    const newSlug = OLD_BLOG_SLUG_MAP[req.params.slug];
+    if (newSlug) return res.redirect(301, `/en/blog/${newSlug}`);
+    next();
   });
 
   // ── Bare-path 301 redirects → canonical /en/ URLs for Googlebot + clean links

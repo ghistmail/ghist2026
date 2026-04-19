@@ -446,7 +446,7 @@ export default function Home() {
         </section>
             {/* ── Latest blogs section */}
         <section className="px-5 sm:px-8 py-10">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <div className="mb-6">
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">Blog</p>
               <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">Latest articles</h2>
@@ -514,7 +514,7 @@ export default function Home() {
                 },
                 {
                   q: "Does Ghist store or sell my data?",
-                  a: "No. Ghist requires no personal information, does not track users, and permanently deletes all emails after 24 hours.",
+                  a: "No. Ghist does not require any personal information and permanently deletes all emails after 24 hours.",
                 },
                 {
                   q: "Can I use Ghist for banking or important accounts?",

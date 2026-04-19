@@ -8,6 +8,36 @@ import { getBlogPostBySlug } from "@/lib/blogData";
 import { useLocale, t } from "@/lib/i18n";
 import { useEffect } from "react";
 
+// Parse inline markdown links: [text](url) → <a> tags
+function renderInlineLinks(text: string): React.ReactNode {
+  const pattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <a
+        key={key++}
+        href={match[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 hover:text-foreground transition-colors"
+      >
+        {match[1]}
+      </a>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
+}
+
 // Detect whether a body paragraph is a subheading.
 // Subheadings: short (≤80 chars), not ending in a period/comma/colon/semi-colon,
 // not starting with a lowercase letter (those are mid-paragraph fragments).
@@ -25,6 +55,9 @@ export default function BlogPost() {
   const locale = useLocale();
   const params = useParams<{ slug: string }>();
   const post = getBlogPostBySlug(params.slug ?? "");
+
+  // Scroll to top when post changes
+  useEffect(() => { window.scrollTo(0, 0); }, [post?.slug]);
 
   // Inject OG image meta tag for this post into document head
   useEffect(() => {
@@ -188,7 +221,7 @@ export default function BlogPost() {
                 elements.push(
                   <ul key={`ul-${i}`} className="list-disc pl-5 space-y-1 text-sm leading-7">
                     {bullets.map((b, bi) => (
-                      <li key={bi}>{b}</li>
+                      <li key={bi}>{renderInlineLinks(b)}</li>
                     ))}
                   </ul>
                 );
@@ -201,7 +234,7 @@ export default function BlogPost() {
                 i++;
               } else {
                 elements.push(
-                  <p key={i} className="text-sm leading-7">{paragraph}</p>
+                  <p key={i} className="text-sm leading-7">{renderInlineLinks(paragraph)}</p>
                 );
                 i++;
               }
