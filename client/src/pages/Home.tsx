@@ -451,37 +451,38 @@ export default function Home() {
               <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">Blog</p>
               <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">Latest articles</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {blogPosts.slice(0, 3).map((post) => (
                 <Link
                   key={post.slug}
-                  href={`/en/blog/${post.slug}`}
+                  href={`/blog/${post.slug}`}
                   className="group block no-underline"
                 >
-                  <div className="rounded-lg overflow-hidden border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors h-full flex flex-col">
-                    <div className="aspect-video w-full bg-muted overflow-hidden">
+                  <article className="rounded-xl overflow-hidden border border-border/40 bg-card hover:border-border transition-colors h-full flex flex-col">
+                    <div className="aspect-video w-full bg-muted overflow-hidden flex-shrink-0">
                       {post.heroImage ? (
                         <img
                           src={post.heroImage}
                           alt={post.heroAlt ?? post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
                           loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full bg-muted" />
                       )}
                     </div>
-                    <div className="p-3 flex-1">
-                      <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">{post.title}</p>
-                      <p className="text-[11px] text-muted-foreground mt-1">{post.readTime}</p>
+                    <div className="p-3 flex-1 flex flex-col space-y-1.5">
+                      <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-foreground/80 transition-colors flex-1">{post.title}</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{post.excerpt}</p>
+                      <p className="text-[10px] text-muted-foreground/50 pt-0.5">{post.readTime}</p>
                     </div>
-                  </div>
+                  </article>
                 </Link>
               ))}
             </div>
             <div className="mt-4 text-right">
-              <Link href="/en/blog" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
-                View all articlesu2192
+              <Link href="/blog" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
+                View all articles
               </Link>
             </div>
           </div>

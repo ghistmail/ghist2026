@@ -88,7 +88,7 @@ export default function BlogPost() {
     setMeta("og:image:height", "630");
     setMeta("og:image:alt", post.heroAlt);
     setMeta("og:title", `${post.title} — Ghist`);
-    setMeta("og:description", post.metaDescription);
+    setMeta("og:description", post.metaDesc);
     setMeta("og:type", "article");
     setMetaName("twitter:card", "summary_large_image");
     setMetaName("twitter:image", ogImgUrl);
@@ -168,7 +168,7 @@ export default function BlogPost() {
             </span>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed border-l-2 border-border pl-3">
-            {post.metaDescription}
+            {post.metaDesc}
           </p>
         </header>
 
