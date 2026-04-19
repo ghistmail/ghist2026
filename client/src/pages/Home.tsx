@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2, Tag, MessageSquare, Wifi, Bot, KeyRound } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
+import { StatsBar } from "@/components/StatsBar";
 
 // Session token stored in memory (no localStorage in sandbox)
 let sessionToken: string | null = null;
@@ -324,7 +325,13 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Every signup you don't quite trust ───────────────── */}
+        {/* ── Trust stats ────────────────────────────────────── */}
+        <section className="bg-background px-5 sm:px-8 py-6">
+          <div className="max-w-3xl mx-auto">
+            <StatsBar />
+          </div>
+        </section>
+
         <section className="bg-muted/20 px-5 sm:px-8 py-10 sm:py-14">
           <div className="max-w-3xl mx-auto">
             <div className="mb-8">

@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { incrementInboxes, incrementEmailsReceived, incrementMessagesDeleted, getStats } from "./stats";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
@@ -173,6 +174,8 @@ setInterval(async () => {
         await mtDeleteAccount(mailbox.mailToken, mailbox.accountId);
       }
     } catch {}
+    const msgs = await storage.getMessages(mailbox.id);
+    incrementMessagesDeleted(msgs.length);
     await storage.deleteMessagesByMailbox(mailbox.id);
     await storage.deleteMailbox(mailbox.id);
   }
@@ -266,6 +269,7 @@ export async function registerRoutes(
         provider: "guerrilla",
       });
 
+      incrementInboxes();
       return res.json({
         id: mailbox.id,
         address: mailbox.address,
@@ -300,6 +304,7 @@ export async function registerRoutes(
         provider: "mailtm",
       });
 
+      incrementInboxes();
       return res.json({
         id: mailbox.id,
         address: mailbox.address,
@@ -327,6 +332,7 @@ export async function registerRoutes(
         provider: "maildrop",
       });
 
+      incrementInboxes();
       return res.json({
         id: mailbox.id,
         address: mailbox.address,
@@ -450,11 +456,14 @@ export async function registerRoutes(
       }
 
       // Cache any new messages we haven't seen before
+      let newCount = 0;
       for (const msg of freshMessages) {
         if (!cachedIds.has(msg.id)) {
           await storage.createMessage(msg);
+          newCount++;
         }
       }
+      if (newCount > 0) incrementEmailsReceived(newCount);
 
       // Return the full DB set (includes read messages that providers no longer return)
       const allMessages = await storage.getMessages(mailbox.id);
@@ -555,6 +564,7 @@ export async function registerRoutes(
       } else {
         // First time seeing this message — cache it
         await storage.createMessage(result);
+        incrementEmailsReceived(1);
       }
 
       return res.json(result);
@@ -889,6 +899,11 @@ ${urls.join("\n")}
     entry.count++;
     return true;
   }
+
+  // ── Trust stats endpoint ──────────────────────────────────────────────────
+  app.get("/api/stats", (_req: Request, res: Response) => {
+    res.json(getStats());
+  });
 
   app.post("/api/contact", async (req: Request, res: Response) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
