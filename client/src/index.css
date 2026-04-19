@@ -101,6 +101,9 @@
 
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+
+  /* Icon color token — light mode: #0052FF (Electric Blue) */
+  --icon: 221 100% 50%;
 }
 
 /* ==========================================================
@@ -182,6 +185,9 @@
   --chart-4: 43 74% 60%;
   --chart-5: 27 80% 60%;
 
+  /* Icon color token — dark mode: #CCFF00 (Electric Lime) */
+  --icon: 72 100% 50%;
+
   /* Ambient shadows — nearly invisible */
   --shadow-2xs: 0px 1px 0px 0px hsl(0 0% 0% / 0.00);
   --shadow-xs:  0px 2px 8px 0px hsl(0 0% 0% / 0.00);
@@ -200,6 +206,13 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* All SVGs (Lucide icons use stroke="currentColor") inherit the icon token.
+     Scoped to svg elements so only icons are affected — text, borders, and
+     backgrounds remain unchanged. */
+  svg {
+    color: hsl(var(--icon));
   }
 }
 
