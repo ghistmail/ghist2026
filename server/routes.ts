@@ -362,6 +362,9 @@ export async function registerRoutes(
           await mtDeleteAccount(mailbox.mailToken, mailbox.accountId);
         }
       } catch {}
+      // Count messages before purging — this is a 24h auto-expiry deletion
+      const expiredMsgs = await storage.getMessages(mailbox.id);
+      incrementMessagesDeleted(expiredMsgs.length);
       await storage.deleteMessagesByMailbox(mailbox.id);
       await storage.deleteMailbox(mailbox.id);
       return res.status(410).json({ error: "Mailbox has expired and been deleted" });

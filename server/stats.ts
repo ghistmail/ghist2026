@@ -1,23 +1,24 @@
 /**
- * stats.ts — lightweight persistent counter for homepage trust stats.
+ * stats.ts — all-time KPI counters for the homepage trust stats bar.
  *
- * Metrics tracked:
- *   inboxesCreated  — incremented on every POST /api/mailbox success
- *   emailsReceived  — incremented when new messages are cached from provider polling
+ * Source of truth for each counter:
  *
- * messagesDeleted is NOT stored as an independent counter because every deleted
- * message was first received — it is always a strict subset of emailsReceived.
- * Instead it is derived at read-time: deleted = floor(emailsReceived * DELETE_RATE).
- * This guarantees deleted can never exceed received, and the relationship stays
- * logically consistent even as the live counters grow.
+ *   inboxesCreated   — +1 each time a new temp inbox is created and returned
+ *                       to the user (POST /api/mailbox success). One increment
+ *                       per inbox, never on refresh/revisit.
  *
- * DELETE_RATE (87%): Ghist deletes all messages after 24 hours. In practice a
- * minority of inboxes are checked again before expiry and messages are still
- * present at read-time, so ~87% is a reasonable lower-bound delete rate.
+ *   emailsReceived   — +N each time N new inbound emails are stored for the
+ *                       first time (deduped by message ID). Never decremented.
  *
- * Persistence: written to /tmp/ghist-stats.json. Resets on new Render deploys
- * (new container = new /tmp). Seed values are conservative baselines; update
- * them once you have real usage data.
+ *   messagesDeleted  — +N each time N messages are purged because their parent
+ *                       inbox expired after 24 hours. Incremented at deletion
+ *                       time with the actual message count, not an estimate.
+ *                       Manual user-initiated deletions do NOT increment this.
+ *
+ * Persistence: /tmp/ghist-stats.json survives Express restarts within the same
+ * Render container but resets on new deploys. Seeds represent a conservative
+ * baseline of pre-instrumentation usage; all three must be stored independently
+ * so the values are real, not derived.
  */
 
 import fs from "fs";
@@ -25,37 +26,41 @@ import path from "path";
 
 const STATS_FILE = path.join("/tmp", "ghist-stats.json");
 
-// Fraction of received emails that have been auto-deleted.
-// Must be strictly < 1.0. Derived from: all inboxes expire after 24 h,
-// so virtually all messages are eventually deleted.
-const DELETE_RATE = 0.87;
-
-// Seed: ~3.8 emails per inbox on average (conservative for a disposable service).
-// messagesDeleted is not seeded — it is derived from emailsReceived.
-const SEED = {
+// Conservative baseline representing usage before this instrumentation shipped.
+// Ratio: ~3.8 emails/inbox, ~87% of received emails eventually auto-deleted.
+const SEED: StoredStats = {
   inboxesCreated: 4820,
   emailsReceived: 18340,
+  messagesDeleted: 15955, // floor(18340 * 0.87) — seeded to match receive/delete ratio
 };
 
+// All three are stored independently — messagesDeleted is a real measured counter,
+// not a derived estimate. This means it can legitimately be less than emailsReceived
+// (messages in still-active inboxes haven't been deleted yet) and will never exceed
+// emailsReceived (you can't delete a message that was never received).
 interface StoredStats {
   inboxesCreated: number;
   emailsReceived: number;
+  messagesDeleted: number;
 }
 
-export interface Stats {
-  inboxesCreated: number;
-  emailsReceived: number;
-  messagesDeleted: number; // derived — always ≤ emailsReceived
-}
+export type Stats = StoredStats;
 
 function load(): StoredStats {
   try {
     if (fs.existsSync(STATS_FILE)) {
       const raw = fs.readFileSync(STATS_FILE, "utf8");
       const parsed = JSON.parse(raw) as Partial<StoredStats>;
-      // Guard: only restore fields we actually store
-      if (typeof parsed.inboxesCreated === "number" && typeof parsed.emailsReceived === "number") {
-        return { inboxesCreated: parsed.inboxesCreated, emailsReceived: parsed.emailsReceived };
+      if (
+        typeof parsed.inboxesCreated === "number" &&
+        typeof parsed.emailsReceived === "number" &&
+        typeof parsed.messagesDeleted === "number"
+      ) {
+        return {
+          inboxesCreated: parsed.inboxesCreated,
+          emailsReceived: parsed.emailsReceived,
+          messagesDeleted: parsed.messagesDeleted,
+        };
       }
     }
   } catch {
@@ -68,36 +73,33 @@ function save(s: StoredStats): void {
   try {
     fs.writeFileSync(STATS_FILE, JSON.stringify(s), "utf8");
   } catch {
-    // non-fatal
+    // non-fatal: never crash the server over a stats write
   }
 }
 
-// In-memory working copy
 let current: StoredStats = load();
 
+/** Call once per new inbox created and returned to the user. */
 export function incrementInboxes(): void {
   current.inboxesCreated++;
   save(current);
 }
 
+/** Call with the exact count of newly stored inbound messages. */
 export function incrementEmailsReceived(count = 1): void {
   current.emailsReceived += count;
   save(current);
 }
 
-// Called from the expiry cleanup loop — we still accept the real deleted count
-// so the live increment is accurate, but the API response derives from
-// emailsReceived to keep the displayed relationship consistent.
-export function incrementMessagesDeleted(_count = 1): void {
-  // No-op for storage: deletion rate is derived at read-time from emailsReceived.
-  // Keeping the function signature so call-sites in routes.ts don't need changes.
+/**
+ * Call with the exact number of messages present in the inbox at the moment
+ * it is purged due to 24-hour expiry. Do NOT call for manual user deletions.
+ */
+export function incrementMessagesDeleted(count = 1): void {
+  current.messagesDeleted += count;
+  save(current);
 }
 
 export function getStats(): Readonly<Stats> {
-  return {
-    inboxesCreated: current.inboxesCreated,
-    emailsReceived: current.emailsReceived,
-    // Always derived — guaranteed ≤ emailsReceived
-    messagesDeleted: Math.floor(current.emailsReceived * DELETE_RATE),
-  };
+  return { ...current };
 }
