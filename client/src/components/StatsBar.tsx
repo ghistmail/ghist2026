@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { MailPlus, Mail, Trash2 } from "lucide-react";
 
 interface Stats {
   inboxesCreated: number;
@@ -49,13 +50,15 @@ interface StatItemProps {
   value: number;
   animate: boolean;
   loading: boolean;
+  icon: React.ReactNode;
 }
 
-function StatItem({ label, value, animate, loading }: StatItemProps) {
+function StatItem({ label, value, animate, loading, icon }: StatItemProps) {
   const displayed = useCountUp(value, animate);
 
   return (
-    <div className="flex flex-col items-center gap-1 py-5 px-4 flex-1 min-w-[120px]">
+    <div className="flex flex-col items-center gap-2 py-5 px-4 flex-1 min-w-[120px]">
+      <div className="text-muted-foreground/60" aria-hidden="true">{icon}</div>
       <span
         className="text-2xl sm:text-3xl font-bold tabular-nums text-foreground"
         aria-live="polite"
@@ -110,24 +113,32 @@ export function StatsBar() {
       data-testid="stats-bar"
       className="w-full border border-border/40 rounded-2xl bg-muted/20 overflow-hidden"
     >
+      <div className="px-5 pt-5 pb-2 border-b border-border/40">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Worldwide Activity
+        </h2>
+      </div>
       <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-border/40">
         <StatItem
           label="Inboxes Created"
           value={stats.inboxesCreated}
           animate={hasAnimated && !isLoading}
           loading={isLoading}
+          icon={<MailPlus className="w-4 h-4" />}
         />
         <StatItem
           label="Emails Received"
           value={stats.emailsReceived}
           animate={hasAnimated && !isLoading}
           loading={isLoading}
+          icon={<Mail className="w-4 h-4" />}
         />
         <StatItem
-          label="Messages Auto-Deleted"
+          label="Inboxes Deleted"
           value={stats.messagesDeleted}
           animate={hasAnimated && !isLoading}
           loading={isLoading}
+          icon={<Trash2 className="w-4 h-4" />}
         />
       </div>
     </section>
