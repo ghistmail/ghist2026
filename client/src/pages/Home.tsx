@@ -358,8 +358,8 @@ export default function Home() {
                   key={label}
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border/40"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-muted/60 dark:bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-3.5 h-3.5 text-muted-foreground dark:text-primary" strokeWidth={1.5} />
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 ring-1 ring-primary/20">
+                    <Icon className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
                   </div>
                   <span className="text-sm font-body font-medium text-foreground whitespace-nowrap">{label}</span>
                 </div>
