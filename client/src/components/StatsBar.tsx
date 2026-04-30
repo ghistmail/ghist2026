@@ -58,7 +58,7 @@ function StatItem({ label, value, animate, loading, icon }: StatItemProps) {
 
   return (
     <div className="flex flex-col items-center gap-2 py-5 px-4 flex-1 min-w-[120px]">
-      <div className="text-muted-foreground/60" aria-hidden="true">{icon}</div>
+      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary" aria-hidden="true">{icon}</div>
       <span
         className="text-2xl sm:text-3xl font-bold tabular-nums text-foreground"
         aria-live="polite"
@@ -124,21 +124,21 @@ export function StatsBar() {
           value={stats.inboxesCreated}
           animate={hasAnimated && !isLoading}
           loading={isLoading}
-          icon={<MailPlus className="w-4 h-4" />}
+          icon={<MailPlus className="w-5 h-5" />}
         />
         <StatItem
           label="Emails Received"
           value={stats.emailsReceived}
           animate={hasAnimated && !isLoading}
           loading={isLoading}
-          icon={<Mail className="w-4 h-4" />}
+          icon={<Mail className="w-5 h-5" />}
         />
         <StatItem
           label="Inboxes Deleted"
           value={stats.messagesDeleted}
           animate={hasAnimated && !isLoading}
           loading={isLoading}
-          icon={<Trash2 className="w-4 h-4" />}
+          icon={<Trash2 className="w-5 h-5" />}
         />
       </div>
     </section>
