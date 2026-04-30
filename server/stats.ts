@@ -32,16 +32,17 @@ const SEED: StoredStats = {
   inboxesCreated: 0,
   emailsReceived: 0,
   messagesDeleted: 0,
+  arrivalTimeSec: 0,
 };
 
-// All three are stored independently — messagesDeleted is a real measured counter,
-// not a derived estimate. This means it can legitimately be less than emailsReceived
-// (messages in still-active inboxes haven't been deleted yet) and will never exceed
-// emailsReceived (you can't delete a message that was never received).
+// All three counters are real measured values.
+// arrivalTimeSec is an exponential moving average of seconds from mailbox creation
+// to first message received — α=0.2 so recent data has more weight.
 interface StoredStats {
   inboxesCreated: number;
   emailsReceived: number;
   messagesDeleted: number;
+  arrivalTimeSec: number; // EMA of seconds-to-first-message; 0 means no data yet
 }
 
 export type Stats = StoredStats;
@@ -60,6 +61,7 @@ function load(): StoredStats {
           inboxesCreated: parsed.inboxesCreated,
           emailsReceived: parsed.emailsReceived,
           messagesDeleted: parsed.messagesDeleted,
+          arrivalTimeSec: typeof parsed.arrivalTimeSec === "number" ? parsed.arrivalTimeSec : 0,
         };
       }
     }
@@ -97,6 +99,21 @@ export function incrementEmailsReceived(count = 1): void {
  */
 export function incrementMessagesDeleted(count = 1): void {
   current.messagesDeleted += count;
+  save(current);
+}
+
+/**
+ * Update the arrival time EMA when a first message arrives in an inbox.
+ * Pass the seconds elapsed between mailbox creation and first message receipt.
+ * α = 0.2: recent samples weighted more, old data fades smoothly.
+ */
+export function recordArrivalTime(seconds: number): void {
+  const α = 0.2;
+  if (current.arrivalTimeSec === 0) {
+    current.arrivalTimeSec = seconds; // bootstrap with first sample
+  } else {
+    current.arrivalTimeSec = Math.round(α * seconds + (1 - α) * current.arrivalTimeSec);
+  }
   save(current);
 }
 

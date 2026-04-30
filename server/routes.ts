@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { incrementInboxes, incrementEmailsReceived, incrementMessagesDeleted, getStats } from "./stats";
+import { incrementInboxes, incrementEmailsReceived, incrementMessagesDeleted, recordArrivalTime, getStats } from "./stats";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
@@ -460,13 +460,23 @@ export async function registerRoutes(
 
       // Cache any new messages we haven't seen before
       let newCount = 0;
+      const wasEmpty = cachedIds.size === 0;
       for (const msg of freshMessages) {
         if (!cachedIds.has(msg.id)) {
           await storage.createMessage(msg);
           newCount++;
         }
       }
-      if (newCount > 0) incrementEmailsReceived(newCount);
+      if (newCount > 0) {
+        incrementEmailsReceived(newCount);
+        // Record arrival time for the first message in this inbox
+        if (wasEmpty && newCount > 0 && mailbox.createdAt) {
+          const elapsedSec = Math.round(
+            (Date.now() - new Date(mailbox.createdAt).getTime()) / 1000
+          );
+          if (elapsedSec > 0 && elapsedSec < 3600) recordArrivalTime(elapsedSec);
+        }
+      }
 
       // Return the full DB set (includes read messages that providers no longer return)
       const allMessages = await storage.getMessages(mailbox.id);
