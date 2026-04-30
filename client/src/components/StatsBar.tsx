@@ -57,17 +57,17 @@ function StatCol({ icon, label, value, loading, animate, animateTarget = 0 }: St
     <div className="flex flex-col gap-4 p-6">
       {/* Icon + label row */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
           {icon}
         </div>
-        <span className="text-sm font-medium text-gray-800">{label}</span>
+        <span className="text-sm font-medium text-foreground">{label}</span>
       </div>
       {/* Number */}
       <div className="pl-1">
         {loading
-          ? <div className="w-12 h-10 rounded-md bg-gray-100 animate-pulse" aria-hidden="true" />
+          ? <div className="w-12 h-10 rounded-md bg-muted animate-pulse" aria-hidden="true" />
           : <span
-              className="text-4xl font-bold text-gray-900 tabular-nums"
+              className="text-4xl font-bold text-foreground tabular-nums"
               aria-live="polite"
               data-testid={`stat-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
@@ -110,17 +110,17 @@ export function StatsBar() {
       ref={sectionRef}
       aria-label="24-hour activity statistics"
       data-testid="activity-24h-section"
-      className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden dark:bg-card dark:border-border/40 dark:shadow-none"
+      className="w-full bg-card rounded-2xl border border-border/60 shadow-sm dark:shadow-none overflow-hidden"
     >
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-100 dark:border-border/40">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-foreground">
+      <div className="px-6 py-5 border-b border-border/60">
+        <h2 className="text-lg font-semibold text-foreground">
           24-Hour Activity
         </h2>
       </div>
 
       {/* 3-col grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-border/40">
+      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/60">
         <StatCol
           icon={<MailPlus className="w-5 h-5" strokeWidth={1.6} />}
           label="Inboxes Created"
