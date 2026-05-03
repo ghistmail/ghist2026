@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { blogPosts } from "@/lib/blogData";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { type Mailbox, type Message } from "@shared/schema";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -15,8 +15,51 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
 import { StatsBar } from "@/components/StatsBar";
 
-// Session token stored in memory (no localStorage in sandbox)
-let sessionToken: string | null = null;
+// ── inkpost.org Worker backend ───────────────────────────────────────────────
+const WORKER_BASE = "https://inkpost-email-worker.alexwain-gh.workers.dev";
+const INKPOST_DOMAIN = "inkpost.org";
+const TTL_MS = 24 * 60 * 60 * 1000;
+
+// Session address stored in memory — one per browser session, no persistence needed
+let sessionAddress: string | null = null;
+
+function randomSlug(len = 10): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function buildMailbox(): Mailbox {
+  const now = Date.now();
+  const slug = randomSlug();
+  const address = `${slug}@${INKPOST_DOMAIN}`;
+  return {
+    id: slug,
+    address,
+    domain: INKPOST_DOMAIN,
+    sessionToken: address,      // use address as the stable session key
+    createdAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + TTL_MS).toISOString(),
+  } as Mailbox;
+}
+
+// Map Worker message shape → frontend Message type
+function mapMessage(m: any, mailboxAddress: string): Message {
+  return {
+    id: m.id,
+    mailboxId: mailboxAddress,
+    from: m.from ?? "",
+    fromName: m.fromName ?? "",
+    subject: m.subject ?? "(No subject)",
+    textBody: m.textBody ?? "",
+    htmlBody: m.raw ?? "",       // Worker stores full MIME in `raw`
+    receivedAt: m.receivedAt,
+    isRead: !!m.isRead,
+    providerId: m.id,
+  } as Message;
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
@@ -25,36 +68,26 @@ export default function Home() {
   // Mobile bottom-sheet state
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
 
-  // Create mailbox mutation
+  // Create mailbox — purely client-side, no server call needed
   const createMailbox = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/mailbox");
-      return (await res.json()) as Mailbox;
-    },
+    mutationFn: async () => buildMailbox(),
     onSuccess: (data) => {
-      sessionToken = data.sessionToken;
+      sessionAddress = data.address;
       setSelectedMessageId(null);
       setExpired(false);
       setBottomSheetOpen(false);
-      queryClient.setQueryData(["/api/mailbox", sessionToken], data);
-      queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionToken, "messages"] });
+      queryClient.setQueryData(["/api/mailbox", sessionAddress], data);
+      queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionAddress, "messages"] });
     },
   });
 
-  // Get current mailbox
-  const { data: mailbox, isLoading: mailboxLoading } = useQuery<Mailbox>({
-    queryKey: ["/api/mailbox", sessionToken],
-    queryFn: async () => {
-      if (!sessionToken) throw new Error("No session");
-      const res = await apiRequest("GET", `/api/mailbox/${sessionToken}`);
-      return (await res.json()) as Mailbox;
-    },
-    enabled: !!sessionToken,
-    refetchInterval: 30000,
-    retry: false,
-  });
+  // Mailbox is built client-side — no need to re-fetch it from server
+  const mailbox = sessionAddress
+    ? (queryClient.getQueryData(["/api/mailbox", sessionAddress]) as Mailbox | undefined)
+    : undefined;
+  const mailboxLoading = createMailbox.isPending;
 
-  // Get messages
+  // Get messages from Worker
   const {
     data: messages = [],
     isLoading: messagesLoading,
@@ -62,13 +95,16 @@ export default function Home() {
     dataUpdatedAt,
     refetch: refetchMessages,
   } = useQuery<Message[]>({
-    queryKey: ["/api/mailbox", sessionToken, "messages"],
+    queryKey: ["/api/mailbox", sessionAddress, "messages"],
     queryFn: async () => {
-      if (!sessionToken) return [];
-      const res = await apiRequest("GET", `/api/mailbox/${sessionToken}/messages`);
-      return (await res.json()) as Message[];
+      if (!sessionAddress) return [];
+      const res = await fetch(
+        `${WORKER_BASE}/api/inbox?email=${encodeURIComponent(sessionAddress)}`
+      );
+      const data = await res.json() as { messages: any[] };
+      return (data.messages ?? []).map((m: any) => mapMessage(m, sessionAddress!));
     },
-    enabled: !!sessionToken && !expired,
+    enabled: !!sessionAddress && !expired,
     refetchInterval: 10000,
   });
 
@@ -77,25 +113,32 @@ export default function Home() {
     if (dataUpdatedAt) setLastChecked(dataUpdatedAt);
   }, [dataUpdatedAt]);
 
-  // Get selected message detail
+  // Get selected message detail (full raw/html body)
   const { data: selectedMessage } = useQuery<Message>({
-    queryKey: ["/api/message", sessionToken, selectedMessageId],
+    queryKey: ["/api/message", sessionAddress, selectedMessageId],
     queryFn: async () => {
-      if (!selectedMessageId || !sessionToken) throw new Error("No message");
-      const res = await apiRequest("GET", `/api/message/${sessionToken}/${selectedMessageId}`);
-      return (await res.json()) as Message;
+      if (!selectedMessageId || !sessionAddress) throw new Error("No message");
+      const encodedEmail = encodeURIComponent(sessionAddress);
+      const res = await fetch(
+        `${WORKER_BASE}/api/message/${encodedEmail}/${selectedMessageId}`
+      );
+      const m = await res.json() as any;
+      return mapMessage(m, sessionAddress!);
     },
-    enabled: !!selectedMessageId && !!sessionToken,
+    enabled: !!selectedMessageId && !!sessionAddress,
   });
 
-  // Delete mailbox
+  // Delete mailbox — tell Worker to purge KV keys, then reset local state
   const deleteMailbox = useMutation({
     mutationFn: async () => {
-      if (!sessionToken) return;
-      await apiRequest("DELETE", `/api/mailbox/${sessionToken}`);
+      if (!sessionAddress) return;
+      await fetch(
+        `${WORKER_BASE}/api/inbox?email=${encodeURIComponent(sessionAddress)}`,
+        { method: "DELETE" }
+      );
     },
     onSuccess: () => {
-      sessionToken = null;
+      sessionAddress = null;
       setSelectedMessageId(null);
       setExpired(false);
       setBottomSheetOpen(false);
@@ -105,7 +148,7 @@ export default function Home() {
 
   // Auto-create on first load
   useEffect(() => {
-    if (!sessionToken && !createMailbox.isPending) {
+    if (!sessionAddress && !createMailbox.isPending) {
       createMailbox.mutate();
     }
   }, []);
@@ -133,7 +176,7 @@ export default function Home() {
   const handleCloseMessage = useCallback(() => {
     setSelectedMessageId(null);
     setBottomSheetOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionToken, "messages"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionAddress, "messages"] });
   }, []);
 
   // Expired state
@@ -168,7 +211,7 @@ export default function Home() {
   }
 
   // No mailbox yet / deleted
-  if (!sessionToken && !createMailbox.isPending) {
+  if (!sessionAddress && !createMailbox.isPending) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
