@@ -104,13 +104,24 @@ function EmailIframe({ html }: { html: string }) {
     return () => window.removeEventListener('message', handler);
   }, []);
 
+  // Cap iframe height — long newsletters should scroll inside the container
+  const cappedHeight = Math.min(height, 2400);
+  const needsScroll = height > 2400;
+
   return (
-    <div style={{ width: "100%", overflowX: "hidden", borderRadius: "8px" }}>
+    <div style={{
+      width: "100%",
+      overflowX: "hidden",
+      overflowY: needsScroll ? "auto" : "visible",
+      maxHeight: needsScroll ? "2400px" : undefined,
+      borderRadius: "8px",
+      WebkitOverflowScrolling: "touch",
+    }}>
       <iframe
         ref={iframeRef}
         srcDoc={srcDoc}
         title="Email content"
-        style={{ width: "100%", height, border: "none", display: "block", background: "white", borderRadius: "8px" }}
+        style={{ width: "100%", height: cappedHeight, border: "none", display: "block", background: "white", borderRadius: "8px" }}
         scrolling="no"
       />
     </div>
@@ -356,15 +367,19 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
           >
             {message.subject}
           </h2>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 text-xs text-muted-foreground font-body">
-            <span>
-              From:{" "}
-              <span className="text-foreground font-medium">
-                {message.fromName ? `${message.fromName} <${message.from}>` : message.from}
+          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground font-body">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="shrink-0">From:</span>
+              <span className="text-foreground font-medium truncate">
+                {message.fromName || message.from}
               </span>
-            </span>
-            <span className="hidden sm:inline text-border">·</span>
-            <span className="tabular-nums">
+              {message.fromName && (
+                <span className="text-muted-foreground/60 truncate hidden sm:inline">
+                  &lt;{message.from}&gt;
+                </span>
+              )}
+            </div>
+            <span className="tabular-nums text-muted-foreground/70">
               {format(new Date(message.receivedAt), "MMM d, yyyy 'at' h:mm a")}
               {" · "}
               {formatDistanceToNow(new Date(message.receivedAt), { addSuffix: true })}

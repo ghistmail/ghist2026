@@ -659,8 +659,8 @@ export default function Home() {
           />
           {/* Sheet */}
           <div
-            className="relative bg-card rounded-t-3xl overflow-hidden flex flex-col"
-            style={{ maxHeight: "88vh" }}
+            className="relative bg-card rounded-t-3xl flex flex-col"
+            style={{ maxHeight: "88vh", height: "88vh" }}
           >
             {/* Handle + close */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/40 shrink-0">
