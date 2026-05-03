@@ -1,5 +1,53 @@
 const ALLOWED_DOMAINS = ["inkpost.org", "copydesk.cc", "doomdeluxe.com"];
 
+/**
+ * Decode RFC 2047 encoded-word sequences in email headers.
+ * Handles both Base64 (=?charset?B?...?=) and QP (=?charset?Q?...?=).
+ * Multiple encoded words are concatenated without extra spaces.
+ */
+function decodeHeader(value) {
+  if (!value || !value.includes("=?")) return value;
+
+  // Unfold multi-line header values first
+  const unfolded = value.replace(/\r?\n[ \t]+/g, " ");
+
+  // Replace each encoded-word token
+  return unfolded.replace(
+    /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g,
+    (_, charset, encoding, encoded) => {
+      try {
+        let bytes;
+        if (encoding.toUpperCase() === "B") {
+          // Base64
+          const bin = atob(encoded.replace(/\s/g, ""));
+          bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        } else {
+          // Quoted-Printable (header variant: _ = space, =XX = hex byte)
+          const qp = encoded.replace(/_/g, " ");
+          const byteArr = [];
+          let i = 0;
+          while (i < qp.length) {
+            if (qp[i] === "=" && i + 2 < qp.length) {
+              byteArr.push(parseInt(qp.slice(i + 1, i + 3), 16));
+              i += 3;
+            } else {
+              byteArr.push(qp.charCodeAt(i));
+              i++;
+            }
+          }
+          bytes = new Uint8Array(byteArr);
+        }
+        return new TextDecoder(charset, { fatal: false }).decode(bytes);
+      } catch {
+        return _;
+      }
+    }
+  )
+  // Remove whitespace between adjacent encoded words (RFC 2047 §6.2)
+  .replace(/(\?=)\s+(=\?)/g, "$1$2").replace(/\?==\?[^?]+\?[BbQq]\?/g, "");
+}
+
 export default {
   async email(message, env, ctx) {
     const raw = await new Response(message.raw).text();
@@ -8,12 +56,16 @@ export default {
     const id = crypto.randomUUID();
     const key = `inbox:${recipient}:${timestamp}:${id}`;
 
-    const subjectMatch = raw.match(/^Subject: (.+)$/im);
-    const fromMatch = raw.match(/^From: (.+)$/im);
+    // Headers can fold across lines — unfold before matching
+    const unfoldedRaw = raw.replace(/\r?\n[ \t]+/g, " ");
+    const subjectMatch = unfoldedRaw.match(/^Subject: (.+)$/im);
+    const fromMatch = unfoldedRaw.match(/^From: (.+)$/im);
     let fromName = message.from;
     if (fromMatch) {
-      const nameMatch = fromMatch[1].match(/^(.+?)\s*<.+>$/);
+      const decoded = decodeHeader(fromMatch[1]);
+      const nameMatch = decoded.match(/^(.+?)\s*<.+>$/);
       if (nameMatch) fromName = nameMatch[1].replace(/['"]/g, "").trim();
+      else fromName = decoded.trim();
     }
 
     const { textBody, htmlBody } = extractBodies(raw);
@@ -23,7 +75,7 @@ export default {
       to: recipient,
       from: message.from,
       fromName,
-      subject: subjectMatch ? subjectMatch[1].trim() : "(No subject)",
+      subject: subjectMatch ? decodeHeader(subjectMatch[1].trim()) : "(No subject)",
       date: message.headers.get("date") || "",
       messageId: message.headers.get("message-id") || "",
       textBody,
