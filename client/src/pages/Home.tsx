@@ -480,44 +480,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Why Ghist? ─────────────────────────────────────────── */}
-        <section className="bg-muted/20 px-5 sm:px-8 py-10">
-          <div className="max-w-3xl mx-auto">
-            <div className="mb-7">
-              <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">
-                Why Ghist?
-              </p>
-              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">
-                Built for people who’d rather share less.
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-card rounded-xl p-5 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <EyeOff className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-sm font-display font-semibold text-foreground">Temporary by default.</h3>
-                </div>
-                <p className="text-xs text-muted-foreground font-body leading-relaxed">
-                  No accounts, no permanent profiles, and no unnecessary data. Your ghost address is yours when you need it—and gone when you don’t.
-                </p>
-              </div>
-              <div className="bg-card rounded-xl p-5 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Clock className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-sm font-display font-semibold text-foreground">Fast enough for OTPs</h3>
-                </div>
-                <p className="text-xs text-muted-foreground font-body leading-relaxed">
-                  Mail lands in your inbox within seconds — fast enough for verification codes and time-sensitive login emails.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-            {/* ── Latest blogs section */}
+        {/* ── Latest blogs section ────────────────────────────────────── */}
         <section className="px-5 sm:px-8 py-10">
           <div className="max-w-3xl mx-auto">
             <div className="mb-6">
@@ -557,6 +520,43 @@ export default function Home() {
               <Link href="/blog" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
                 View all articles
               </Link>
+            </div>
+          </div>
+        </section>
+        {/* ── Why Ghist? ─────────────────────────────────────────── */}
+        <section className="bg-muted/20 px-5 sm:px-8 py-10">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-7">
+              <p className="text-[11px] font-body font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-2">
+                Why Ghist?
+              </p>
+              <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">
+                Built for people who’d rather share less.
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-card rounded-xl p-5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <EyeOff className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Temporary by default.</h3>
+                </div>
+                <p className="text-xs text-muted-foreground font-body leading-relaxed">
+                  No accounts, no permanent profiles, and no unnecessary data. Your ghost address is yours when you need it—and gone when you don’t.
+                </p>
+              </div>
+              <div className="bg-card rounded-xl p-5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Clock className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-sm font-display font-semibold text-foreground">Fast enough for OTPs</h3>
+                </div>
+                <p className="text-xs text-muted-foreground font-body leading-relaxed">
+                  Mail lands in your inbox within seconds — fast enough for verification codes and time-sensitive login emails.
+                </p>
+              </div>
             </div>
           </div>
         </section>
