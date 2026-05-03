@@ -91,6 +91,15 @@ export default function Home() {
   // Mobile bottom-sheet state
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
 
+  // Fire-and-forget stats ping — never throws
+  const trackEvent = (event: string, count?: number) => {
+    fetch("/api/stats/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event, count }),
+    }).catch(() => {});
+  };
+
   // Create mailbox — purely client-side, no server call needed
   const createMailbox = useMutation({
     mutationFn: async () => buildMailbox(),
@@ -101,6 +110,7 @@ export default function Home() {
       setBottomSheetOpen(false);
       queryClient.setQueryData(["/api/mailbox", sessionAddress], data);
       queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionAddress, "messages"] });
+      trackEvent("inbox_created");
     },
   });
 
@@ -136,6 +146,16 @@ export default function Home() {
     if (dataUpdatedAt) setLastChecked(dataUpdatedAt);
   }, [dataUpdatedAt]);
 
+  // Track new emails received
+  const prevMessageCount = useRef(0);
+  useEffect(() => {
+    const current = messages.length;
+    if (current > prevMessageCount.current) {
+      trackEvent("emails_received", current - prevMessageCount.current);
+    }
+    prevMessageCount.current = current;
+  }, [messages.length]);
+
   // Get selected message detail (full raw/html body)
   const { data: selectedMessage } = useQuery<Message>({
     queryKey: ["/api/message", sessionAddress, selectedMessageId],
@@ -161,6 +181,7 @@ export default function Home() {
       );
     },
     onSuccess: () => {
+      trackEvent("inbox_deleted");
       sessionAddress = null;
       setSelectedMessageId(null);
       setExpired(false);

@@ -918,6 +918,15 @@ ${urls.join("\n")}
     res.json(getStats());
   });
 
+  // Lightweight tracking endpoint — called by frontend (Worker bypasses server)
+  app.post("/api/stats/track", (req: Request, res: Response) => {
+    const { event, count } = req.body as { event: string; count?: number };
+    if (event === "inbox_created") incrementInboxes();
+    else if (event === "emails_received") incrementEmailsReceived(count ?? 1);
+    else if (event === "inbox_deleted") incrementMessagesDeleted(count ?? 1);
+    res.json({ ok: true });
+  });
+
   app.post("/api/contact", async (req: Request, res: Response) => {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     if (!checkContactRateLimit(ip)) {
