@@ -1,3 +1,5 @@
+const ALLOWED_DOMAINS = ["inkpost.org", "copydesk.cc", "doomdeluxe.com"];
+
 export default {
   async email(message, env, ctx) {
     const raw = await new Response(message.raw).text();
@@ -46,11 +48,11 @@ export default {
       return json({ ok: true, service: "inkpost-email-worker" });
     }
 
-    // GET /api/inbox?email=slug@inkpost.org
+    // GET /api/inbox?email=slug@inkpost.org (or @copydesk.cc / @doomdeluxe.com)
     if (url.pathname === "/api/inbox" && request.method === "GET") {
       const email = (url.searchParams.get("email") || "").toLowerCase().trim();
-      if (!email || !email.endsWith("@inkpost.org")) {
-        return json({ error: "Valid @inkpost.org email required" }, 400);
+      if (!email || !ALLOWED_DOMAINS.some(d => email.endsWith("@" + d))) {
+        return json({ error: "Valid email required" }, 400);
       }
 
       const prefix = `inbox:${email}:`;

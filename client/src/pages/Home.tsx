@@ -15,30 +15,53 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
 import { StatsBar } from "@/components/StatsBar";
 
-// ── inkpost.org Worker backend ───────────────────────────────────────────────
+// ── Worker backend (inkpost.org · copydesk.cc · doomdeluxe.com) ─────────────
 const WORKER_BASE = "https://inkpost-email-worker.alexwain-gh.workers.dev";
-const INKPOST_DOMAIN = "inkpost.org";
+const DOMAINS = ["inkpost.org", "copydesk.cc", "doomdeluxe.com"] as const;
 const TTL_MS = 24 * 60 * 60 * 1000;
 
 // Session address stored in memory — one per browser session, no persistence needed
 let sessionAddress: string | null = null;
 
-function randomSlug(len = 10): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let out = "";
-  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
+// ── Word-pair address generator ───────────────────────────────────────────────
+const WORDS = [
+  "amber","arctic","aspen","atlas","azure","birch","bloom","cedar","cinder",
+  "cliff","cloud","cobalt","coral","crest","crisp","dawn","delta","drift",
+  "dusk","ember","fern","field","flint","fog","forest","frost","grove",
+  "harbor","haven","heath","hollow","indigo","inlet","iron","isle","ivory",
+  "jade","juniper","keep","kelp","kindle","lantern","larch","lava","linden",
+  "loft","lunar","mallow","maple","marble","marsh","mesa","mist","moor",
+  "moss","nimbus","oak","obsidian","ochre","onyx","opal","orbit","parch",
+  "pebble","peak","pine","prism","quartz","quiet","reed","ridge","rift",
+  "river","rune","sage","salt","sand","scale","sedge","shale","shore",
+  "silver","slate","smoke","snow","solace","span","spire","spruce","stone",
+  "storm","strata","summit","swift","tallow","thorn","tide","timber","topaz",
+  "trace","vale","vault","veil","verdant","verge","vesper","weld","willow",
+  "wren","yarrow","zenith","zephyr",
+];
+
+function wordPair(): string {
+  const pick = () => WORDS[Math.floor(Math.random() * WORDS.length)];
+  let a = pick(), b = pick();
+  // Avoid identical halves
+  while (b === a) b = pick();
+  return `${a}.${b}`;
+}
+
+function randomDomain(): string {
+  return DOMAINS[Math.floor(Math.random() * DOMAINS.length)];
 }
 
 function buildMailbox(): Mailbox {
   const now = Date.now();
-  const slug = randomSlug();
-  const address = `${slug}@${INKPOST_DOMAIN}`;
+  const slug = wordPair();
+  const domain = randomDomain();
+  const address = `${slug}@${domain}`;
   return {
     id: slug,
     address,
-    domain: INKPOST_DOMAIN,
-    sessionToken: address,      // use address as the stable session key
+    domain,
+    sessionToken: address,
     createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + TTL_MS).toISOString(),
   } as Mailbox;
