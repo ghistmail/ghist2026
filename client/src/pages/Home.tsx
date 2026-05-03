@@ -53,7 +53,7 @@ function mapMessage(m: any, mailboxAddress: string): Message {
     fromName: m.fromName ?? "",
     subject: m.subject ?? "(No subject)",
     textBody: m.textBody ?? "",
-    htmlBody: m.raw ?? "",       // Worker stores full MIME in `raw`
+    htmlBody: m.htmlBody ?? "",
     receivedAt: m.receivedAt,
     isRead: !!m.isRead,
     providerId: m.id,
