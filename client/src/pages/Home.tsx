@@ -20,8 +20,33 @@ const WORKER_BASE = "https://inkpost-email-worker.alexwain-gh.workers.dev";
 const DOMAINS = ["inkpost.org", "copydesk.cc", "doomdeluxe.com"] as const;
 const TTL_MS = 24 * 60 * 60 * 1000;
 
-// Session address stored in memory — one per browser session, no persistence needed
-let sessionAddress: string | null = null;
+// Session address — persisted to sessionStorage so refresh/idle doesn't lose the inbox
+const SESSION_KEY = "ghist_session";
+
+function loadSession(): { address: string; expiresAt: string } | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { address: string; expiresAt: string };
+    // Discard if already expired
+    if (new Date(parsed.expiresAt).getTime() <= Date.now()) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return parsed;
+  } catch { return null; }
+}
+
+function saveSession(address: string, expiresAt: string) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ address, expiresAt })); } catch {}
+}
+
+function clearSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+}
+
+const _saved = loadSession();
+let sessionAddress: string | null = _saved ? _saved.address : null;
 
 // ── Word-pair address generator ───────────────────────────────────────────────
 const WORDS = [
@@ -52,18 +77,27 @@ function randomDomain(): string {
   return DOMAINS[Math.floor(Math.random() * DOMAINS.length)];
 }
 
-function buildMailbox(): Mailbox {
+function buildMailbox(restore?: { address: string; expiresAt: string }): Mailbox {
+  if (restore) {
+    const [slug, domain] = restore.address.split("@");
+    return {
+      id: slug, address: restore.address, domain,
+      sessionToken: restore.address,
+      createdAt: "",
+      expiresAt: restore.expiresAt,
+    } as Mailbox;
+  }
   const now = Date.now();
   const slug = wordPair();
   const domain = randomDomain();
   const address = `${slug}@${domain}`;
+  const expiresAt = new Date(now + TTL_MS).toISOString();
+  saveSession(address, expiresAt);
   return {
-    id: slug,
-    address,
-    domain,
+    id: slug, address, domain,
     sessionToken: address,
     createdAt: new Date(now).toISOString(),
-    expiresAt: new Date(now + TTL_MS).toISOString(),
+    expiresAt,
   } as Mailbox;
 }
 
@@ -102,15 +136,17 @@ export default function Home() {
 
   // Create mailbox — purely client-side, no server call needed
   const createMailbox = useMutation({
-    mutationFn: async () => buildMailbox(),
-    onSuccess: (data) => {
+    mutationFn: async (opts?: { restore: { address: string; expiresAt: string } }) =>
+      buildMailbox(opts?.restore),
+    onSuccess: (data, vars) => {
       sessionAddress = data.address;
       setSelectedMessageId(null);
       setExpired(false);
       setBottomSheetOpen(false);
       queryClient.setQueryData(["/api/mailbox", sessionAddress], data);
       queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionAddress, "messages"] });
-      trackEvent("inbox_created");
+      // Only count as a new inbox if not restoring an existing session
+      if (!vars?.restore) trackEvent("inbox_created");
     },
   });
 
@@ -182,6 +218,7 @@ export default function Home() {
     },
     onSuccess: () => {
       trackEvent("inbox_deleted");
+      clearSession();
       sessionAddress = null;
       setSelectedMessageId(null);
       setExpired(false);
@@ -190,10 +227,18 @@ export default function Home() {
     },
   });
 
-  // Auto-create on first load
+  // Auto-create on first load — restore saved session if valid, otherwise create fresh
   useEffect(() => {
     if (!sessionAddress && !createMailbox.isPending) {
       createMailbox.mutate();
+    } else if (sessionAddress && !createMailbox.isPending) {
+      const saved = loadSession();
+      if (saved) {
+        createMailbox.mutate({ restore: saved });
+      } else {
+        sessionAddress = null;
+        createMailbox.mutate();
+      }
     }
   }, []);
 

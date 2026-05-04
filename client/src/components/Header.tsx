@@ -23,9 +23,15 @@ export function Header() {
     >
       <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4 overflow-visible">
         {/* Animated ghost + wordmark — left on desktop, will be part of centred hero on mobile */}
-        <Link href="/" className="flex items-center no-underline" aria-label="Ghist Homepage" data-testid="text-brand">
+        <a
+          href="/"
+          onClick={(e) => { e.preventDefault(); window.location.reload(); }}
+          className="flex items-center no-underline cursor-pointer"
+          aria-label="Ghist — refresh"
+          data-testid="text-brand"
+        >
           <GhistLogoFull size={28} />
-        </Link>
+        </a>
 
         {/* Nav right */}
         <div className="flex items-center gap-0.5">
