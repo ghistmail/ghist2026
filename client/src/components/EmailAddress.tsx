@@ -21,16 +21,22 @@ function InlineCountdown({
 }) {
   const [display, setDisplay] = useState("");
   const [urgent, setUrgent] = useState(false);
-  const [expired, setExpired] = useState(false);
+  const firedRef = useRef(false);
+  // Keep latest onExpired in a ref so it never re-triggers the effect
+  const onExpiredRef = useRef(onExpired);
+  useEffect(() => { onExpiredRef.current = onExpired; }, [onExpired]);
 
   useEffect(() => {
+    firedRef.current = false; // reset when expiresAt changes (new inbox)
     function tick() {
       const diff = new Date(expiresAt).getTime() - Date.now();
       if (diff <= 0) {
         setDisplay("Expired");
         setUrgent(true);
-        setExpired(true);
-        onExpired();
+        if (!firedRef.current) {
+          firedRef.current = true;
+          onExpiredRef.current();
+        }
         return;
       }
       const h = Math.floor(diff / 3600000);
@@ -44,7 +50,7 @@ function InlineCountdown({
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [expiresAt, onExpired]);
+  }, [expiresAt]); // onExpired intentionally excluded — accessed via ref
 
   return (
     <span
