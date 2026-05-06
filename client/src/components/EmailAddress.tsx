@@ -27,7 +27,10 @@ function InlineCountdown({
   useEffect(() => { onExpiredRef.current = onExpired; }, [onExpired]);
 
   useEffect(() => {
-    firedRef.current = false; // reset when expiresAt changes (new inbox)
+    // Only re-arm if the new expiresAt is genuinely in the future
+    if (new Date(expiresAt).getTime() > Date.now()) {
+      firedRef.current = false;
+    }
     function tick() {
       const diff = new Date(expiresAt).getTime() - Date.now();
       if (diff <= 0) {

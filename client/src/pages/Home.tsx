@@ -266,6 +266,8 @@ export default function Home() {
     setSelectedMessageId(null);
     setBottomSheetOpen(false);
     queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionAddress, "messages"] });
+    // Restore scroll position so hero heading is visible again
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   // Expired state
