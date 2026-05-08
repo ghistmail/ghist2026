@@ -125,14 +125,13 @@ export default function Home() {
   // Mobile bottom-sheet state
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
 
-  // Fire-and-forget stats ping — never throws
-  const trackEvent = (event: string, count?: number) => {
+  // Stats ping — returns a promise so callers can await before invalidating cache
+  const trackEvent = (event: string, count?: number): Promise<void> =>
     fetch("/api/stats/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ event, count }),
-    }).catch(() => {});
-  };
+    }).then(() => {}).catch(() => {});
 
   // Create mailbox — purely client-side, no server call needed
   const createMailbox = useMutation({
@@ -216,8 +215,9 @@ export default function Home() {
         { method: "DELETE" }
       );
     },
-    onSuccess: () => {
-      trackEvent("inbox_deleted");
+    onSuccess: async () => {
+      await trackEvent("inbox_deleted");
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       clearSession();
       sessionAddress = null;
       setSelectedMessageId(null);
