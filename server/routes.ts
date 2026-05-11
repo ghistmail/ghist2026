@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { incrementInboxes, incrementEmailsReceived, incrementMessagesDeleted, recordArrivalTime, getStats } from "./stats";
+import { incrementInboxes, incrementEmailsReceived, incrementMessagesDeleted, recordArrivalTime, getStats, recordCountryHit, getTopCountry } from "./stats";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
@@ -913,17 +913,28 @@ ${urls.join("\n")}
     return true;
   }
 
+  // Record country hit on every page load (CF-IPCountry header from Cloudflare)
+  app.use((req: Request, _res, next) => {
+    const country = (req.headers["cf-ipcountry"] as string | undefined) ?? "";
+    if (country) recordCountryHit(country);
+    next();
+  });
+
   // ── Trust stats endpoint ──────────────────────────────────────────────────
   app.get("/api/stats", (_req: Request, res: Response) => {
-    res.json(getStats());
+    const base = getStats();
+    const topCountry = getTopCountry();
+    res.json({ ...base, topCountry: topCountry || null });
   });
 
   // Lightweight tracking endpoint — called by frontend (Worker bypasses server)
   app.post("/api/stats/track", (req: Request, res: Response) => {
-    const { event, count } = req.body as { event: string; count?: number };
+    const { event, count, country } = req.body as { event: string; count?: number; country?: string };
     if (event === "inbox_created") incrementInboxes();
     else if (event === "emails_received") incrementEmailsReceived(count ?? 1);
     else if (event === "inbox_deleted") incrementMessagesDeleted(count ?? 1);
+    // Accept country from client as fallback (for direct Worker traffic)
+    if (country) recordCountryHit(country);
     res.json({ ok: true });
   });
 

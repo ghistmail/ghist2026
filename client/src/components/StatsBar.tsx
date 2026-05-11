@@ -5,13 +5,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MailPlus, Mail, Trash2 } from "lucide-react";
+import { MailPlus, Mail, Globe } from "lucide-react";
 
 interface Stats {
   inboxesCreated: number;
   emailsReceived: number;
   messagesDeleted: number;
   arrivalTimeSec: number;
+  topCountry: string | null;
 }
 
 function fmtNum(n: number): string {
@@ -67,7 +68,11 @@ function StatCol({ icon, label, value, loading, animate, animateTarget = 0 }: St
         {loading
           ? <div className="w-12 h-10 rounded-md bg-muted animate-pulse" aria-hidden="true" />
           : <span
-              className="text-4xl font-bold text-foreground tabular-nums"
+              className={`font-bold text-foreground ${
+                typeof value === "string" && value.length > 12
+                  ? "text-xl sm:text-2xl"
+                  : "text-4xl tabular-nums"
+              }`}
               aria-live="polite"
               data-testid={`stat-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
@@ -102,7 +107,7 @@ export function StatsBar() {
 
   if (isError) return null;
 
-  const stats = data ?? { inboxesCreated: 0, emailsReceived: 0, messagesDeleted: 0, arrivalTimeSec: 0 };
+  const stats = data ?? { inboxesCreated: 0, emailsReceived: 0, messagesDeleted: 0, arrivalTimeSec: 0, topCountry: null };
   const canAnimate = revealed && !isLoading;
 
   return (
@@ -138,9 +143,9 @@ export function StatsBar() {
           animateTarget={stats.emailsReceived}
         />
         <StatCol
-          icon={<Trash2 className="w-5 h-5" strokeWidth={1.6} />}
-          label="Inboxes Deleted"
-          value={fmtNum(stats.messagesDeleted)}
+          icon={<Globe className="w-5 h-5" strokeWidth={1.6} />}
+          label="Top Country"
+          value={stats.topCountry ?? "No data"}
           loading={isLoading}
         />
       </div>
