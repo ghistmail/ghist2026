@@ -91,7 +91,6 @@ interface CountryHit {
   ts: number;      // Date.now() at time of hit
 }
 
-const WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 const countryHits: CountryHit[] = [];
 
 /** Record a visitor country hit (call once per significant request). */
