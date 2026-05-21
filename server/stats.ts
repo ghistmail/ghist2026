@@ -1,96 +1,55 @@
 /**
- * stats.ts — all-time KPI counters for the homepage trust stats bar.
+ * stats.ts — rolling 24-hour activity metrics for the homepage trust stats bar.
  *
- * Source of truth for each counter:
+ * All three event counters (inboxesCreated, emailsReceived, messagesDeleted)
+ * use in-memory timestamped arrays so every value is derived from
+ * Date.now() - 24h, matching a strict rolling window with no calendar resets.
  *
- *   inboxesCreated   — +1 each time a new temp inbox is created and returned
- *                       to the user (POST /api/mailbox success). One increment
- *                       per inbox, never on refresh/revisit.
- *
- *   emailsReceived   — +N each time N new inbound emails are stored for the
- *                       first time (deduped by message ID). Never decremented.
- *
- *   messagesDeleted  — +N each time N messages are purged because their parent
- *                       inbox expired after 24 hours. Incremented at deletion
- *                       time with the actual message count, not an estimate.
- *                       Manual user-initiated deletions do NOT increment this.
- *
- * Persistence: /tmp/ghist-stats.json survives Express restarts within the same
- * Render container but resets on new deploys. Seeds represent a conservative
- * baseline of pre-instrumentation usage; all three must be stored independently
- * so the values are real, not derived.
+ * arrivalTimeSec is an EMA of seconds-to-first-message — not windowed because
+ * it is an average, not a count.
  */
 
-import fs from "fs";
-import path from "path";
+const WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in ms
 
-const STATS_FILE = path.join("/tmp", "ghist-stats.json");
+// ── Rolling event stores ───────────────────────────────────────────────────
+// Each array holds timestamps (ms). Entries older than WINDOW_MS are pruned
+// on every write. Counts are derived at read time.
 
-// Conservative baseline representing usage before this instrumentation shipped.
-// Ratio: ~3.8 emails/inbox, ~87% of received emails eventually auto-deleted.
-const SEED: StoredStats = {
-  inboxesCreated: 0,
-  emailsReceived: 0,
-  messagesDeleted: 0,
-  arrivalTimeSec: 0,
-};
+const inboxEvents: number[] = [];
+const emailEvents: number[] = []; // each entry = one received email
+const deleteEvents: number[] = [];
 
-// All three counters are real measured values.
-// arrivalTimeSec is an exponential moving average of seconds from mailbox creation
-// to first message received — α=0.2 so recent data has more weight.
-interface StoredStats {
+function pruneOld(arr: number[]): void {
+  const cutoff = Date.now() - WINDOW_MS;
+  while (arr.length > 0 && arr[0] < cutoff) arr.shift();
+}
+
+function countWindow(arr: number[]): number {
+  const cutoff = Date.now() - WINDOW_MS;
+  return arr.filter(ts => ts >= cutoff).length;
+}
+
+// ── arrivalTimeSec EMA (not windowed — it's an average, not a count) ───────
+let arrivalTimeSec = 0;
+
+export interface Stats {
   inboxesCreated: number;
   emailsReceived: number;
   messagesDeleted: number;
-  arrivalTimeSec: number; // EMA of seconds-to-first-message; 0 means no data yet
+  arrivalTimeSec: number;
 }
-
-export type Stats = StoredStats;
-
-function load(): StoredStats {
-  try {
-    if (fs.existsSync(STATS_FILE)) {
-      const raw = fs.readFileSync(STATS_FILE, "utf8");
-      const parsed = JSON.parse(raw) as Partial<StoredStats>;
-      if (
-        typeof parsed.inboxesCreated === "number" &&
-        typeof parsed.emailsReceived === "number" &&
-        typeof parsed.messagesDeleted === "number"
-      ) {
-        return {
-          inboxesCreated: parsed.inboxesCreated,
-          emailsReceived: parsed.emailsReceived,
-          messagesDeleted: parsed.messagesDeleted,
-          arrivalTimeSec: typeof parsed.arrivalTimeSec === "number" ? parsed.arrivalTimeSec : 0,
-        };
-      }
-    }
-  } catch {
-    // corrupt file — fall through to seed
-  }
-  return { ...SEED };
-}
-
-function save(s: StoredStats): void {
-  try {
-    fs.writeFileSync(STATS_FILE, JSON.stringify(s), "utf8");
-  } catch {
-    // non-fatal: never crash the server over a stats write
-  }
-}
-
-let current: StoredStats = load();
 
 /** Call once per new inbox created and returned to the user. */
 export function incrementInboxes(): void {
-  current.inboxesCreated++;
-  save(current);
+  inboxEvents.push(Date.now());
+  pruneOld(inboxEvents);
 }
 
 /** Call with the exact count of newly stored inbound messages. */
 export function incrementEmailsReceived(count = 1): void {
-  current.emailsReceived += count;
-  save(current);
+  const now = Date.now();
+  for (let i = 0; i < count; i++) emailEvents.push(now);
+  pruneOld(emailEvents);
 }
 
 /**
@@ -98,27 +57,29 @@ export function incrementEmailsReceived(count = 1): void {
  * it is purged due to 24-hour expiry. Do NOT call for manual user deletions.
  */
 export function incrementMessagesDeleted(count = 1): void {
-  current.messagesDeleted += count;
-  save(current);
+  const now = Date.now();
+  for (let i = 0; i < count; i++) deleteEvents.push(now);
+  pruneOld(deleteEvents);
 }
 
 /**
  * Update the arrival time EMA when a first message arrives in an inbox.
- * Pass the seconds elapsed between mailbox creation and first message receipt.
  * α = 0.2: recent samples weighted more, old data fades smoothly.
  */
 export function recordArrivalTime(seconds: number): void {
   const α = 0.2;
-  if (current.arrivalTimeSec === 0) {
-    current.arrivalTimeSec = seconds; // bootstrap with first sample
-  } else {
-    current.arrivalTimeSec = Math.round(α * seconds + (1 - α) * current.arrivalTimeSec);
-  }
-  save(current);
+  arrivalTimeSec = arrivalTimeSec === 0
+    ? seconds
+    : Math.round(α * seconds + (1 - α) * arrivalTimeSec);
 }
 
 export function getStats(): Readonly<Stats> {
-  return { ...current };
+  return {
+    inboxesCreated: countWindow(inboxEvents),
+    emailsReceived: countWindow(emailEvents),
+    messagesDeleted: countWindow(deleteEvents),
+    arrivalTimeSec,
+  };
 }
 
 // ── Country tracking (rolling 24-hour window) ─────────────────────────────
