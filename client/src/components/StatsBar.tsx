@@ -120,7 +120,7 @@ export function StatsBar() {
       {/* Header */}
       <div className="px-6 py-5 border-b border-border/60">
         <h2 className="text-lg font-semibold text-foreground">
-          24-Hour Activity
+          Global Activity
         </h2>
       </div>
 
@@ -149,6 +149,9 @@ export function StatsBar() {
           loading={isLoading}
         />
       </div>
+      <p className="px-6 pb-4 text-[11px] text-muted-foreground">
+        Updated hourly
+      </p>
     </section>
   );
 }

@@ -1,35 +1,11 @@
 /**
- * stats.ts — rolling 24-hour activity metrics for the homepage trust stats bar.
- *
- * All three event counters (inboxesCreated, emailsReceived, messagesDeleted)
- * use in-memory timestamped arrays so every value is derived from
- * Date.now() - 24h, matching a strict rolling window with no calendar resets.
- *
- * arrivalTimeSec is an EMA of seconds-to-first-message — not windowed because
- * it is an average, not a count.
+ * stats.ts — cumulative lifetime activity counters + hourly-cached top country.
  */
 
-const WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in ms
-
-// ── Rolling event stores ───────────────────────────────────────────────────
-// Each array holds timestamps (ms). Entries older than WINDOW_MS are pruned
-// on every write. Counts are derived at read time.
-
-const inboxEvents: number[] = [];
-const emailEvents: number[] = []; // each entry = one received email
-const deleteEvents: number[] = [];
-
-function pruneOld(arr: number[]): void {
-  const cutoff = Date.now() - WINDOW_MS;
-  while (arr.length > 0 && arr[0] < cutoff) arr.shift();
-}
-
-function countWindow(arr: number[]): number {
-  const cutoff = Date.now() - WINDOW_MS;
-  return arr.filter(ts => ts >= cutoff).length;
-}
-
-// ── arrivalTimeSec EMA (not windowed — it's an average, not a count) ───────
+// ── Cumulative counters (lifetime totals, reset on redeploy) ───────────────
+let inboxesCreated = 0;
+let emailsReceived = 0;
+let messagesDeleted = 0;
 let arrivalTimeSec = 0;
 
 export interface Stats {
@@ -39,33 +15,10 @@ export interface Stats {
   arrivalTimeSec: number;
 }
 
-/** Call once per new inbox created and returned to the user. */
-export function incrementInboxes(): void {
-  inboxEvents.push(Date.now());
-  pruneOld(inboxEvents);
-}
+export function incrementInboxes(): void { inboxesCreated++; }
+export function incrementEmailsReceived(count = 1): void { emailsReceived += count; }
+export function incrementMessagesDeleted(count = 1): void { messagesDeleted += count; }
 
-/** Call with the exact count of newly stored inbound messages. */
-export function incrementEmailsReceived(count = 1): void {
-  const now = Date.now();
-  for (let i = 0; i < count; i++) emailEvents.push(now);
-  pruneOld(emailEvents);
-}
-
-/**
- * Call with the exact number of messages present in the inbox at the moment
- * it is purged due to 24-hour expiry. Do NOT call for manual user deletions.
- */
-export function incrementMessagesDeleted(count = 1): void {
-  const now = Date.now();
-  for (let i = 0; i < count; i++) deleteEvents.push(now);
-  pruneOld(deleteEvents);
-}
-
-/**
- * Update the arrival time EMA when a first message arrives in an inbox.
- * α = 0.2: recent samples weighted more, old data fades smoothly.
- */
 export function recordArrivalTime(seconds: number): void {
   const α = 0.2;
   arrivalTimeSec = arrivalTimeSec === 0
@@ -74,62 +27,52 @@ export function recordArrivalTime(seconds: number): void {
 }
 
 export function getStats(): Readonly<Stats> {
-  return {
-    inboxesCreated: countWindow(inboxEvents),
-    emailsReceived: countWindow(emailEvents),
-    messagesDeleted: countWindow(deleteEvents),
-    arrivalTimeSec,
-  };
+  return { inboxesCreated, emailsReceived, messagesDeleted, arrivalTimeSec };
 }
 
-// ── Country tracking (rolling 24-hour window) ─────────────────────────────
-// Entries stored in memory only — no persistence needed (resets on deploy,
-// but Cloudflare delivers CF-IPCountry on every request so it repopulates fast).
+// ── Top country — rolling 24h window, cached and refreshed once per hour ──
+const COUNTRY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const CACHE_TTL_MS      =       60 * 60 * 1000; // 1 hour
 
-interface CountryHit {
-  country: string; // 2-letter ISO code from Cloudflare
-  ts: number;      // Date.now() at time of hit
-}
-
+interface CountryHit { country: string; ts: number; }
 const countryHits: CountryHit[] = [];
 
-/** Record a visitor country hit (call once per significant request). */
+// Hourly cache
+let cachedTopCountry: string = "";
+let cacheComputedAt  = 0;
+
 export function recordCountryHit(code: string): void {
-  if (!code || code === "XX" || code === "T1") return; // unknown / Tor
+  if (!code || code === "XX" || code === "T1") return;
   countryHits.push({ country: code.toUpperCase(), ts: Date.now() });
-  // Prune old entries to keep memory bounded
-  const cutoff = Date.now() - WINDOW_MS;
-  while (countryHits.length > 0 && countryHits[0].ts < cutoff) {
-    countryHits.shift();
-  }
+  const cutoff = Date.now() - COUNTRY_WINDOW_MS;
+  while (countryHits.length > 0 && countryHits[0].ts < cutoff) countryHits.shift();
 }
 
-/** Return the country name with the most hits in the last 24 hours. */
-export function getTopCountry(): string {
-  const cutoff = Date.now() - WINDOW_MS;
+function computeTopCountry(): string {
+  const cutoff = Date.now() - COUNTRY_WINDOW_MS;
   const recent = countryHits.filter(h => h.ts >= cutoff);
   if (recent.length === 0) return "";
-
-  // Group by country, track count and most-recent timestamp
   const map = new Map<string, { count: number; lastSeen: number }>();
   for (const h of recent) {
-    const entry = map.get(h.country);
-    if (!entry) {
-      map.set(h.country, { count: 1, lastSeen: h.ts });
-    } else {
-      entry.count++;
-      if (h.ts > entry.lastSeen) entry.lastSeen = h.ts;
-    }
+    const e = map.get(h.country);
+    if (!e) map.set(h.country, { count: 1, lastSeen: h.ts });
+    else { e.count++; if (h.ts > e.lastSeen) e.lastSeen = h.ts; }
   }
-
-  // Sort by count desc, then by most-recent on tie
-  const sorted = [...map.entries()].sort((a, b) => {
-    if (b[1].count !== a[1].count) return b[1].count - a[1].count;
-    return b[1].lastSeen - a[1].lastSeen;
-  });
-
+  const sorted = [...map.entries()].sort((a, b) =>
+    b[1].count !== a[1].count ? b[1].count - a[1].count : b[1].lastSeen - a[1].lastSeen
+  );
   const topCode = sorted[0][0];
-  return COUNTRY_NAMES[topCode] ?? topCode; // fallback to 2-letter code
+  return COUNTRY_NAMES[topCode] ?? topCode;
+}
+
+/** Returns cached top country; recomputes at most once per hour. */
+export function getTopCountry(): string {
+  if (Date.now() - cacheComputedAt >= CACHE_TTL_MS) {
+    const result = computeTopCountry();
+    if (result) { cachedTopCountry = result; } // keep last good value on empty
+    cacheComputedAt = Date.now();
+  }
+  return cachedTopCountry;
 }
 
 // ISO 3166-1 alpha-2 → common name (covers majority of web traffic)
