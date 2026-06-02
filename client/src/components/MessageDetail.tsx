@@ -121,6 +121,8 @@ function EmailIframe({ html }: { html: string }) {
         ref={iframeRef}
         srcDoc={srcDoc}
         title="Email content"
+        sandbox="allow-same-origin"
+        referrerPolicy="no-referrer"
         style={{ width: "100%", height: cappedHeight, border: "none", display: "block", background: "white", borderRadius: "8px" }}
         scrolling="no"
       />
@@ -204,6 +206,37 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
 
     const toProxy = (url: string) =>
       url.startsWith("http") ? proxyBase + encodeURIComponent(url) : url;
+
+    // ── Step 2b: strip stealth/anti-AI content ────────────────────────────
+    // Remove nodes hidden via CSS tricks that could carry injected instructions
+    // invisible to the user but readable by AI agents parsing the DOM.
+    // 1. Inline display:none / visibility:hidden / zero-opacity / zero-font-size
+    doc.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+      const s = (el.getAttribute("style") || "").toLowerCase();
+      if (
+        /display\s*:\s*none/.test(s) ||
+        /visibility\s*:\s*hidden/.test(s) ||
+        /opacity\s*:\s*0(?:[^.\d]|$)/.test(s) ||
+        /font-size\s*:\s*0(?:px|pt|em|rem|%)/.test(s) ||
+        /font-size\s*:\s*0(?:[^.\d]|$)/.test(s) ||
+        /color\s*:\s*(?:white|#fff(?:fff)?|rgba?\([^)]*,\s*0\))/.test(s)
+      ) {
+        el.remove();
+      }
+    });
+    // 2. HTML comment nodes — can carry hidden instructions
+    const commentWalker = document.createTreeWalker(doc.documentElement, NodeFilter.SHOW_COMMENT);
+    const comments: Node[] = [];
+    while (commentWalker.nextNode()) comments.push(commentWalker.currentNode);
+    comments.forEach(c => c.parentNode?.removeChild(c));
+    // 3. Zero-width / invisible Unicode characters in text nodes
+    const textWalker = document.createTreeWalker(doc.documentElement, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    while (textWalker.nextNode()) textNodes.push(textWalker.currentNode as Text);
+    textNodes.forEach(tn => {
+      // Strip zero-width spaces, soft hyphens, invisible separators
+      tn.nodeValue = (tn.nodeValue || "").replace(/[\u00AD\u200B-\u200D\u2060\uFEFF\u034F]/g, "");
+    });
 
     // ── Step 3: restore stashed src values and proxy them ──
     doc.querySelectorAll("img[data-ghist-src], source[data-ghist-src]").forEach((el) => {
@@ -439,10 +472,12 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
           </div>
         )}
 
-        {/* Email body — rendered in isolated iframe so sender styles/images are preserved */}
+        {/* Email body — untrusted sender content, isolated from Ghist UI context */}
         <div className="pt-4" data-testid="text-email-body">
           {sanitizedHtml ? (
-            <EmailIframe html={sanitizedHtml} />
+            <div data-trust-level="untrusted" aria-label="Email content from untrusted sender">
+              <EmailIframe html={sanitizedHtml} />
+            </div>
           ) : (
             <pre
               className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed"
