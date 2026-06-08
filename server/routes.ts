@@ -929,8 +929,9 @@ ${urls.join("\n")}
   app.get("/api/stats", (_req: Request, res: Response) => {
     const base = getStats();
     const topCountry = getTopCountry();
+    // emailsPerInbox: whole-number ratio; floor avoids fractional display
     const emailsPerInbox = base.inboxesCreated > 0
-      ? Math.round((base.emailsReceived / base.inboxesCreated) * 10) / 10
+      ? Math.floor(base.emailsReceived / base.inboxesCreated)
       : 0;
     res.json({ ...base, topCountry: topCountry || null, emailsPerInbox });
   });

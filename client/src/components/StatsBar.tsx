@@ -145,7 +145,7 @@ export function StatsBar() {
         <StatCol
           icon={<TrendingUp className="w-5 h-5" strokeWidth={1.6} />}
           label="Emails per Inbox"
-          value={stats.emailsPerInbox.toFixed(1)}
+          value={String(Math.floor(stats.emailsPerInbox))}
           loading={isLoading}
         />
         <StatCol
