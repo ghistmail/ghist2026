@@ -21,8 +21,7 @@ function fmtNum(n: number): string {
 }
 
 function fmtEmailsPerInbox(value: number, inboxesCreated: number): string {
-  if (inboxesCreated === 0 || value === 0) return "–";
-  if (value < 10) return value.toFixed(1);
+  if (inboxesCreated === 0 || value == null) return "–";
   return String(Math.round(value));
 }
 
