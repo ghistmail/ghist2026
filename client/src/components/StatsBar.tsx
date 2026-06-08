@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MailPlus, Mail, Globe, TrendingUp } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Stats {
   inboxesCreated: number;
@@ -17,6 +18,12 @@ interface Stats {
 
 function fmtNum(n: number): string {
   return n.toLocaleString("en-AU");
+}
+
+function fmtEmailsPerInbox(value: number, inboxesCreated: number): string {
+  if (inboxesCreated === 0 || value === 0) return "–";
+  if (value < 10) return value.toFixed(1);
+  return String(Math.round(value));
 }
 
 // Count-up on first reveal — emails received only
@@ -48,9 +55,10 @@ interface StatColProps {
   loading: boolean;
   animate?: boolean;
   animateTarget?: number;
+  subtext?: string;
 }
 
-function StatCol({ icon, label, value, loading, animate, animateTarget = 0 }: StatColProps) {
+function StatCol({ icon, label, value, loading, animate, animateTarget = 0, subtext }: StatColProps) {
   const counted = useCountUp(animateTarget, !!animate);
   const display = animate ? fmtNum(counted) : value;
 
@@ -67,17 +75,20 @@ function StatCol({ icon, label, value, loading, animate, animateTarget = 0 }: St
       <div className="pl-1">
         {loading
           ? <div className="w-12 h-10 rounded-md bg-muted animate-pulse" aria-hidden="true" />
-          : <span
-              className={`font-bold text-foreground ${
-                typeof value === "string" && value.length > 12
-                  ? "text-xl sm:text-2xl"
-                  : "text-4xl tabular-nums"
-              }`}
-              aria-live="polite"
-              data-testid={`stat-${label.toLowerCase().replace(/\s+/g, "-")}`}
-            >
-              {display}
-            </span>
+          : <>
+              <span
+                className={`font-bold text-foreground ${
+                  typeof value === "string" && value.length > 12
+                    ? "text-xl sm:text-2xl"
+                    : "text-4xl tabular-nums"
+                }`}
+                aria-live="polite"
+                data-testid={`stat-${label.toLowerCase().replace(/\s+/g, "-")}`}
+              >
+                {display}
+              </span>
+              {subtext && <p className="mt-1 text-[11px] text-muted-foreground">{subtext}</p>}
+            </>
         }
       </div>
     </div>
@@ -142,12 +153,28 @@ export function StatsBar() {
           animate={canAnimate}
           animateTarget={stats.emailsReceived}
         />
-        <StatCol
-          icon={<TrendingUp className="w-5 h-5" strokeWidth={1.6} />}
-          label="Emails per Inbox"
-          value={String(Math.floor(stats.emailsPerInbox))}
-          loading={isLoading}
-        />
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <StatCol
+                  icon={<TrendingUp className="w-5 h-5" strokeWidth={1.6} />}
+                  label="Emails per Inbox"
+                  value={
+                    isLoading
+                      ? "–"
+                      : fmtEmailsPerInbox(stats.emailsPerInbox, stats.inboxesCreated)
+                  }
+                  loading={isLoading}
+                  subtext={stats.inboxesCreated === 0 && !isLoading ? "No inboxes created yet" : undefined}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[220px] text-center text-xs">
+              Average emails received per inbox (total emails ÷ total inboxes).
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <StatCol
           icon={<Globe className="w-5 h-5" strokeWidth={1.6} />}
           label="Top Country"
