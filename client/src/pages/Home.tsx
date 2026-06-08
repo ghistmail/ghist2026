@@ -144,8 +144,7 @@ export default function Home() {
       setBottomSheetOpen(false);
       queryClient.setQueryData(["/api/mailbox", sessionAddress], data);
       queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionAddress, "messages"] });
-      // Only count as a new inbox if not restoring an existing session
-      if (!vars?.restore) trackEvent("inbox_created");
+      // inbox_created is tracked on first copy, not on generation — see EmailAddress.tsx
     },
   });
 
@@ -359,6 +358,7 @@ export default function Home() {
               </div>
             ) : mailbox ? (
               <EmailAddress
+                onFirstCopy={() => trackEvent("inbox_created")}
                 address={mailbox.address}
                 expiresAt={mailbox.expiresAt}
                 onGenerate={handleGenerate}

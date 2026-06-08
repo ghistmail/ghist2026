@@ -5,12 +5,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MailPlus, Mail, Globe } from "lucide-react";
+import { MailPlus, Mail, Globe, TrendingUp } from "lucide-react";
 
 interface Stats {
   inboxesCreated: number;
   emailsReceived: number;
-  messagesDeleted: number;
+  emailsPerInbox: number;
   arrivalTimeSec: number;
   topCountry: string | null;
 }
@@ -107,7 +107,7 @@ export function StatsBar() {
 
   if (isError) return null;
 
-  const stats = data ?? { inboxesCreated: 0, emailsReceived: 0, messagesDeleted: 0, arrivalTimeSec: 0, topCountry: null };
+  const stats = data ?? { inboxesCreated: 0, emailsReceived: 0, emailsPerInbox: 0, arrivalTimeSec: 0, topCountry: null };
   const canAnimate = revealed && !isLoading;
 
   return (
@@ -124,8 +124,8 @@ export function StatsBar() {
         </h2>
       </div>
 
-      {/* 3-col grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/60">
+      {/* 4-col grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 divide-x md:divide-x divide-border/60">
         <StatCol
           icon={<MailPlus className="w-5 h-5" strokeWidth={1.6} />}
           label="Inboxes Created"
@@ -141,6 +141,12 @@ export function StatsBar() {
           loading={isLoading}
           animate={canAnimate}
           animateTarget={stats.emailsReceived}
+        />
+        <StatCol
+          icon={<TrendingUp className="w-5 h-5" strokeWidth={1.6} />}
+          label="Emails per Inbox"
+          value={stats.emailsPerInbox.toFixed(1)}
+          loading={isLoading}
         />
         <StatCol
           icon={<Globe className="w-5 h-5" strokeWidth={1.6} />}

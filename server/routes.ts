@@ -913,8 +913,13 @@ ${urls.join("\n")}
     return true;
   }
 
+  // Bot / crawler detection — reuse for all metric endpoints
+  const BOT_UA = /bot|crawler|spider|crawling|preview|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|curl|python-requests|java\/|go-http|axios/i;
+  const isBot = (req: Request) => BOT_UA.test(req.headers["user-agent"] || "");
+
   // Record country hit on every page load (CF-IPCountry header from Cloudflare)
   app.use((req: Request, _res, next) => {
+    if (isBot(req)) return next(); // exclude bots from geo stats
     const country = (req.headers["cf-ipcountry"] as string | undefined) ?? "";
     if (country) recordCountryHit(country);
     next();
@@ -924,11 +929,15 @@ ${urls.join("\n")}
   app.get("/api/stats", (_req: Request, res: Response) => {
     const base = getStats();
     const topCountry = getTopCountry();
-    res.json({ ...base, topCountry: topCountry || null });
+    const emailsPerInbox = base.inboxesCreated > 0
+      ? Math.round((base.emailsReceived / base.inboxesCreated) * 10) / 10
+      : 0;
+    res.json({ ...base, topCountry: topCountry || null, emailsPerInbox });
   });
 
   // Lightweight tracking endpoint — called by frontend (Worker bypasses server)
   app.post("/api/stats/track", (req: Request, res: Response) => {
+    if (isBot(req)) return res.json({ ok: true }); // silently ignore bots
     const { event, count, country } = req.body as { event: string; count?: number; country?: string };
     if (event === "inbox_created") incrementInboxes();
     else if (event === "emails_received") incrementEmailsReceived(count ?? 1);

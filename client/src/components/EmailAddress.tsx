@@ -9,6 +9,8 @@ interface EmailAddressProps {
   onDelete: () => void;
   isGenerating: boolean;
   onExpired: () => void;
+  /** Called once per unique address when user first copies it. */
+  onFirstCopy?: () => void;
 }
 
 /** Inline countdown — "23:59:39" or "59m 12s" when urgent */
@@ -91,11 +93,14 @@ export function EmailAddress({
   onDelete,
   isGenerating,
   onExpired,
+  onFirstCopy,
 }: EmailAddressProps) {
   const [copied, setCopied] = useState(false);
   const [flashKey, setFlashKey] = useState(0);
   const [revealKey, setRevealKey] = useState(0);
   const prevAddress = useRef(address);
+  // Track which addresses have already been counted to prevent double-count
+  const copiedAddresses = useRef(new Set<string>());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -121,6 +126,11 @@ export function EmailAddress({
     setFlashKey((k) => k + 1);
     toast({ title: "Address copied" });
     setTimeout(() => setCopied(false), 1500);
+    // Fire once per unique address (ignore repeated copies of same address)
+    if (onFirstCopy && !copiedAddresses.current.has(address)) {
+      copiedAddresses.current.add(address);
+      onFirstCopy();
+    }
   };
 
   return (
