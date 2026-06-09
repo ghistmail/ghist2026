@@ -121,7 +121,7 @@ function EmailIframe({ html }: { html: string }) {
         ref={iframeRef}
         srcDoc={srcDoc}
         title="Email content"
-        sandbox="allow-same-origin"
+        sandbox="allow-scripts allow-same-origin allow-popups"
         referrerPolicy="no-referrer"
         style={{ width: "100%", height: cappedHeight, border: "none", display: "block", background: "white", borderRadius: "8px" }}
         scrolling="no"
