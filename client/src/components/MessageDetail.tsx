@@ -219,6 +219,8 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
     // Remove nodes hidden via CSS tricks that could carry injected instructions
     // invisible to the user but readable by AI agents parsing the DOM.
     // 1. Inline display:none / visibility:hidden / zero-opacity / zero-font-size
+    // NOTE: white color is NOT removed — legitimate emails use white text on
+    // dark/coloured backgrounds. Only strip truly invisible elements.
     doc.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
       const s = (el.getAttribute("style") || "").toLowerCase();
       if (
@@ -226,8 +228,7 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
         /visibility\s*:\s*hidden/.test(s) ||
         /opacity\s*:\s*0(?:[^.\d]|$)/.test(s) ||
         /font-size\s*:\s*0(?:px|pt|em|rem|%)/.test(s) ||
-        /font-size\s*:\s*0(?:[^.\d]|$)/.test(s) ||
-        /color\s*:\s*(?:white|#fff(?:fff)?|rgba?\([^)]*,\s*0\))/.test(s)
+        /font-size\s*:\s*0(?:[^.\d]|$)/.test(s)
       ) {
         el.remove();
       }
