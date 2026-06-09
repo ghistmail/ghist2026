@@ -6,6 +6,15 @@ import DOMPurify from "dompurify";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
+// --- pickRenderablePart ---
+// Returns { mode: "html", content } if htmlBody is non-empty, else plain-text fallback.
+function pickRenderablePart(message: Message): { mode: "html" | "text"; content: string } {
+  if (message.htmlBody && message.htmlBody.trim().length > 0) {
+    return { mode: "html", content: message.htmlBody };
+  }
+  return { mode: "text", content: message.textBody ?? "" };
+}
+
 interface MessageDetailProps {
   message: Message;
   onBack: () => void;
@@ -58,10 +67,9 @@ function extractLinks(html: string): { href: string; text: string }[] {
   return links;
 }
 
-// ── Sandboxed iframe email renderer ─────────────────────────────────────────
-// Renders the email HTML in a fully isolated iframe so the sender's styles,
-// fonts, images and table layouts are preserved exactly as intended.
-// Uses postMessage to auto-resize height without needing allow-same-origin.
+// --- HtmlEmailViewer ---
+// Sanitizes rawHtml with DOMPurify (preserving tables, inline styles, layout attrs)
+// and renders it in an isolated srcdoc iframe. Auto-resizes via postMessage.
 function EmailIframe({ html }: { html: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(600);
@@ -373,6 +381,13 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
     setTimeout(() => setOtpCopied(false), 2000);
   };
 
+  // --- MessageView integration ---
+  // pickRenderablePart selects html vs text; default view is "original" (HTML iframe).
+  const renderable = useMemo(() => pickRenderablePart(message), [message]);
+  const [view, setView] = useState<"original" | "reader">("original");
+  // Reset to original view whenever the message changes
+  useEffect(() => { setView("original"); }, [message.id]);
+
   return (
     <div className="flex flex-col">
       {/* Top bar */}
@@ -392,7 +407,7 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
 
       {/* Message content */}
       <div className="p-5 sm:p-7 space-y-5">
-        {/* Header: subject + meta */}
+        {/* Header stub: subject + meta */}
         <div className="space-y-2">
           <h2
             className="font-display text-xl sm:text-2xl font-bold text-foreground leading-snug"
@@ -420,7 +435,7 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
           </div>
         </div>
 
-        {/* OTP highlight — editorial card with tonal bg */}
+        {/* OTP highlight — shown in both views */}
         {otp && (
           <div className="bg-secondary rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4">
             <div>
@@ -446,42 +461,75 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
           </div>
         )}
 
-        {/* Action links */}
-        {links.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[10px] font-body font-semibold tracking-[0.15em] uppercase text-muted-foreground">
-              Links in this message
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {links.slice(0, 5).map((link, i) => (
-                <a
-                  key={i}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-primary bg-primary/8 px-2.5 py-1.5 rounded-lg no-underline hover:bg-primary/14 transition-colors font-body"
-                  data-testid={`link-action-${i}`}
-                >
-                  <ExternalLink className="w-3 h-3 shrink-0" />
-                  <span className="truncate max-w-[180px]">
-                    {link.text.length > 40 ? link.text.slice(0, 40) + "..." : link.text}
-                  </span>
-                </a>
-              ))}
-            </div>
+        {/* Original / Reader toggle — only shown when HTML is available */}
+        {renderable.mode === "html" && (
+          <div className="flex items-center gap-1 p-0.5 bg-secondary/60 rounded-lg w-fit" data-testid="view-toggle">
+            <button
+              onClick={() => setView("original")}
+              data-testid="toggle-original"
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                view === "original"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Original
+            </button>
+            <button
+              onClick={() => setView("reader")}
+              data-testid="toggle-reader"
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                view === "reader"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Reader
+            </button>
           </div>
         )}
 
-        {/* Email body — untrusted sender content, isolated from Ghist UI context */}
-        <div className="pt-4" data-testid="text-email-body">
-          {sanitizedHtml ? (
+        {/* Email body */}
+        <div className="pt-2" data-testid="text-email-body">
+          {renderable.mode === "html" && view === "original" ? (
+            // HtmlEmailViewer: original HTML in isolated iframe, no links block prepended
             <div data-trust-level="untrusted" aria-label="Email content from untrusted sender">
-              <EmailIframe html={sanitizedHtml} />
+              <EmailIframe html={sanitizedHtml ?? ""} />
+            </div>
+          ) : renderable.mode === "html" && view === "reader" ? (
+            // ReaderView: simplified text rendering (links block shown here only)
+            <div className="space-y-4">
+              {links.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-body font-semibold tracking-[0.15em] uppercase text-muted-foreground">
+                    Links in this message
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {links.slice(0, 5).map((link, i) => (
+                      <a
+                        key={i}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary bg-primary/8 px-2.5 py-1.5 rounded-lg no-underline hover:bg-primary/14 transition-colors font-body"
+                        data-testid={`link-action-${i}`}
+                      >
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                        <span className="truncate max-w-[180px]">
+                          {link.text.length > 40 ? link.text.slice(0, 40) + "..." : link.text}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
+                {message.textBody}
+              </pre>
             </div>
           ) : (
-            <pre
-              className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed"
-            >
+            // Plain-text fallback — no HTML part at all
+            <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
               {message.textBody}
             </pre>
           )}
