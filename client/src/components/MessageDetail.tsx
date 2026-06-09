@@ -87,6 +87,7 @@ function EmailIframe({ html }: { html: string }) {
   // Re-fire after proxied images finish loading
   setTimeout(send, 800);
   setTimeout(send, 2000);
+  setTimeout(send, 4000);
   // Watch for any late-loading images
   document.querySelectorAll('img').forEach(function(img){
     img.addEventListener('load', send);
@@ -112,26 +113,15 @@ function EmailIframe({ html }: { html: string }) {
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  // Cap iframe height — long newsletters should scroll inside the container
-  const cappedHeight = Math.min(height, 2400);
-  const needsScroll = height > 2400;
-
   return (
-    <div style={{
-      width: "100%",
-      overflowX: "hidden",
-      overflowY: needsScroll ? "auto" : "visible",
-      maxHeight: needsScroll ? "2400px" : undefined,
-      borderRadius: "8px",
-      WebkitOverflowScrolling: "touch",
-    }}>
+    <div style={{ width: "100%", overflowX: "hidden", borderRadius: "8px" }}>
       <iframe
         ref={iframeRef}
         srcDoc={srcDoc}
         title="Email content"
         sandbox="allow-scripts allow-same-origin allow-popups"
         referrerPolicy="no-referrer"
-        style={{ width: "100%", height: cappedHeight, border: "none", display: "block", background: "white", borderRadius: "8px" }}
+        style={{ width: "100%", height, border: "none", display: "block", background: "white", borderRadius: "8px" }}
         scrolling="no"
       />
     </div>
