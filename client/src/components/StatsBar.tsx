@@ -21,8 +21,10 @@ function fmtNum(n: number): string {
 }
 
 function fmtEmailsPerInbox(value: number, inboxesCreated: number): string {
-  if (inboxesCreated === 0 || value == null) return "–";
-  return String(Math.round(value));
+  const safeInboxCount = Number(inboxesCreated) || 0;
+  if (safeInboxCount <= 0 || value == null || isNaN(value) || !isFinite(value)) return "0.0";
+  // Keep 1 decimal place so the derived metric matches the displayed totals.
+  return Number(value).toFixed(1);
 }
 
 // Count-up on first reveal — emails received only
