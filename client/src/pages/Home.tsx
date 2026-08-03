@@ -45,8 +45,14 @@ function clearSession() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch {}
 }
 
+// NOTE: sessionAddress/mailbox used to live only in the react-query cache,
+// written via setQueryData but never read through an active useQuery
+// subscriber. Query cache entries with zero observers are eligible for
+// garbage collection after `gcTime` (default 5 min) — so after a few minutes
+// reading an email, the entry would silently vanish and the whole hero
+// (heading + address + countdown) would render null on the next re-render.
+// Fixed by moving both into real component state below.
 const _saved = loadSession();
-let sessionAddress: string | null = _saved ? _saved.address : null;
 
 // ── Word-pair address generator ───────────────────────────────────────────────
 const WORDS = [
@@ -119,6 +125,10 @@ function mapMessage(m: any, mailboxAddress: string): Message {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const [sessionAddress, setSessionAddress] = useState<string | null>(
+    () => (_saved ? _saved.address : null)
+  );
+  const [mailbox, setMailbox] = useState<Mailbox | null>(null);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | undefined>(undefined);
@@ -137,21 +147,19 @@ export default function Home() {
   const createMailbox = useMutation({
     mutationFn: async (opts?: { restore: { address: string; expiresAt: string } }) =>
       buildMailbox(opts?.restore),
-    onSuccess: (data, vars) => {
-      sessionAddress = data.address;
+    onSuccess: (data) => {
+      setSessionAddress(data.address);
+      setMailbox(data);
       setSelectedMessageId(null);
       setExpired(false);
       setBottomSheetOpen(false);
-      queryClient.setQueryData(["/api/mailbox", sessionAddress], data);
-      queryClient.invalidateQueries({ queryKey: ["/api/mailbox", sessionAddress, "messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mailbox", data.address, "messages"] });
       // inbox_created is tracked on first copy, not on generation — see EmailAddress.tsx
     },
   });
 
-  // Mailbox is built client-side — no need to re-fetch it from server
-  const mailbox = sessionAddress
-    ? (queryClient.getQueryData(["/api/mailbox", sessionAddress]) as Mailbox | undefined)
-    : undefined;
+  // Mailbox is built client-side — held in real state (see note above) so it
+  // can never be silently evicted mid-session.
   const mailboxLoading = createMailbox.isPending;
 
   // Get messages from Worker
@@ -218,7 +226,8 @@ export default function Home() {
       await trackEvent("inbox_deleted");
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       clearSession();
-      sessionAddress = null;
+      setSessionAddress(null);
+      setMailbox(null);
       setSelectedMessageId(null);
       setExpired(false);
       setBottomSheetOpen(false);
@@ -235,7 +244,7 @@ export default function Home() {
       if (saved) {
         createMailbox.mutate({ restore: saved });
       } else {
-        sessionAddress = null;
+        setSessionAddress(null);
         createMailbox.mutate();
       }
     }

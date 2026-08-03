@@ -78,9 +78,34 @@ function EmailIframe({ html }: { html: string }) {
   const srcDoc = useMemo(() => {
     const resizeScript = `<script>
 (function(){
+  var blockedCount = 0;
   function send(){
     var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     window.parent.postMessage({type:'ghist-iframe-height',h:h},'*');
+  }
+  // Swap a failed image for an inline placeholder so a fully image-based
+  // email never collapses into one giant blank box (ad blockers / Brave
+  // Shields commonly block proxied image requests client-side).
+  function markFailed(img){
+    if (img.dataset.ghistFailed) return;
+    img.dataset.ghistFailed = '1';
+    blockedCount++;
+    var ph = document.createElement('span');
+    ph.textContent = 'Image blocked';
+    ph.style.cssText = 'display:inline-block;padding:6px 10px;margin:2px 0;background:#f1f1f1;color:#888;font:12px -apple-system,sans-serif;border-radius:6px;';
+    img.style.display = 'none';
+    if (img.parentNode) img.parentNode.insertBefore(ph, img);
+    maybeShowBanner();
+  }
+  function maybeShowBanner(){
+    if (blockedCount < 1 || document.getElementById('ghist-block-banner')) return;
+    var b = document.createElement('div');
+    b.id = 'ghist-block-banner';
+    b.textContent = 'Some images in this email were blocked by your browser or an extension.';
+    b.style.cssText = 'position:sticky;top:0;background:#fff3cd;color:#664d03;font:12px -apple-system,sans-serif;padding:8px 12px;border-bottom:1px solid #ffe69c;z-index:9999;';
+    if (document.body.firstChild) document.body.insertBefore(b, document.body.firstChild);
+    else document.body.appendChild(b);
+    send();
   }
   document.addEventListener('DOMContentLoaded', send);
   window.addEventListener('load', send);
@@ -88,10 +113,10 @@ function EmailIframe({ html }: { html: string }) {
   setTimeout(send, 800);
   setTimeout(send, 2000);
   setTimeout(send, 4000);
-  // Watch for any late-loading images
+  // Watch for any late-loading (or blocked) images
   document.querySelectorAll('img').forEach(function(img){
     img.addEventListener('load', send);
-    img.addEventListener('error', send);
+    img.addEventListener('error', function(){ markFailed(img); send(); });
   });
 })();
 <\/script>`;
@@ -200,10 +225,15 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
     });
 
     const doc = new DOMParser().parseFromString(clean, "text/html");
-    const proxyBase = `${window.location.origin}/api/imgproxy?url=`;
+    // Opaque base64 payload under a short, non-signature-matching path/param —
+    // see the /api/media-relay note in server/routes.ts for why this changed
+    // from /api/imgproxy?url=<raw-url> (ad-blocker/Brave Shields false positive).
+    const proxyBase = `${window.location.origin}/api/media-relay?d=`;
 
     const toProxy = (url: string) =>
-      url.startsWith("http") ? proxyBase + encodeURIComponent(url) : url;
+      url.startsWith("http")
+        ? proxyBase + encodeURIComponent(btoa(encodeURIComponent(url)))
+        : url;
 
     // ── Step 2b: strip stealth/anti-AI content ────────────────────────────
     // Remove nodes hidden via CSS tricks that could carry injected instructions

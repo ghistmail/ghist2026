@@ -590,11 +590,28 @@ export async function registerRoutes(
     }
   });
 
-  // ── Image proxy — fetches external email images server-side to avoid
-  // referrer/CORS blocks from email marketing servers
-  app.get("/api/imgproxy", async (req: Request, res: Response) => {
-    const url = req.query.url as string;
-    if (!url) return res.status(400).end();
+  // ── Media relay — fetches external email images server-side to avoid
+  // referrer/CORS blocks from email marketing servers.
+  //
+  // NOTE: this endpoint was previously named /api/imgproxy with a plain
+  // ?url=<absolute-url> query param. That exact shape — path literal
+  // "imgproxy" combined with a raw absolute URL under a `url=` key — matches
+  // generic heuristics in several ad-blocker/anti-tracking filter lists
+  // (both because "imgproxy" is the name of a widely-abused open-source
+  // image-proxy project, and because embedding a full URL under `url=` is a
+  // classic open-redirect/click-tracker signature). Privacy-focused browsers
+  // and extensions (Brave Shields, uBlock Origin default lists, etc.) were
+  // silently dropping these requests client-side — the server never even saw
+  // them. Renamed + the payload is now opaque base64 instead of a bare URL.
+  app.get("/api/media-relay", async (req: Request, res: Response) => {
+    const encoded = req.query.d as string;
+    if (!encoded) return res.status(400).end();
+    let url: string;
+    try {
+      url = decodeURIComponent(Buffer.from(encoded, "base64").toString("utf-8"));
+    } catch {
+      return res.status(400).end();
+    }
     // Only proxy http/https URLs
     if (!/^https?:\/\//i.test(url)) return res.status(400).end();
     try {
