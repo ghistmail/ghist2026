@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { loadDurableStats } from "./stats";
 
 const app = express();
 const httpServer = createServer(app);
@@ -69,6 +70,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Restore Global Activity counters from Redis (if configured) before
+  // serving any requests, so /api/stats never reports a false zero.
+  await loadDurableStats();
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
