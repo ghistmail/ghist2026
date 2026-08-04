@@ -160,7 +160,7 @@ export default function BlogPost() {
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="w-3 h-3" />
-              {post.readingTime}
+              {post.readTime}
             </span>
             <span className="flex items-center gap-1.5">
               <Tag className="w-3 h-3" />
