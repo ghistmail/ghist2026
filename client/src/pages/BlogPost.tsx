@@ -97,6 +97,28 @@ export default function BlogPost() {
     document.title = `${post.title} — Ghist`;
   }, [post]);
 
+  // Inject FAQPage JSON-LD structured data for posts with FAQs
+  useEffect(() => {
+    const scriptId = "faq-jsonld";
+    const existing = document.getElementById(scriptId);
+    if (existing) existing.remove();
+    if (!post?.faqs || post.faqs.length === 0) return;
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.type = "application/ld+json";
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: post.faqs.map((f) => ({
+        "@type": "Question",
+        name: f.question,
+        acceptedAnswer: { "@type": "Answer", text: f.answer },
+      })),
+    });
+    document.head.appendChild(script);
+    return () => { document.getElementById(scriptId)?.remove(); };
+  }, [post]);
+
   if (!post) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -211,7 +233,71 @@ export default function BlogPost() {
                 );
               }
               const paragraph = post.body[i];
-              if (paragraph.startsWith("- ")) {
+              if (paragraph === "[[TABLE]]" && post.table) {
+                const t = post.table;
+                const rowCount = Math.max(t.leftItems.length, t.rightItems.length);
+                elements.push(
+                  <div key={`table-${i}`} className="my-6 -mx-4 sm:mx-0">
+                    {t.title && (
+                      <h2 className="text-base font-bold text-foreground mb-3 px-4 sm:px-0 leading-snug">{t.title}</h2>
+                    )}
+                    <div className="overflow-x-auto px-4 sm:px-0">
+                      <table className="w-full text-sm border border-border/60 rounded-lg overflow-hidden min-w-[420px]">
+                        <thead>
+                          <tr>
+                            <th className="text-left font-semibold text-foreground bg-muted/40 px-3 py-2 border-b border-border/60 w-1/2">
+                              {t.leftHeader}
+                            </th>
+                            <th className="text-left font-semibold text-foreground bg-muted/40 px-3 py-2 border-b border-border/60 border-l border-border/60 w-1/2">
+                              {t.rightHeader}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: rowCount }).map((_, ri) => (
+                            <tr key={ri} className={ri % 2 === 1 ? "bg-muted/10" : undefined}>
+                              <td className="align-top px-3 py-2 border-b border-border/40 leading-6">
+                                {t.leftItems[ri] ?? ""}
+                              </td>
+                              <td className="align-top px-3 py-2 border-b border-border/40 border-l border-border/40 leading-6">
+                                {t.rightItems[ri] ?? ""}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+                i++;
+              } else if (paragraph === "[[FAQS]]" && post.faqs) {
+                elements.push(
+                  <div key={`faqs-${i}`} className="my-6 space-y-4">
+                    <h2 className="text-base font-bold text-foreground leading-snug">Frequently asked questions</h2>
+                    <div className="space-y-4">
+                      {post.faqs.map((f, fi) => (
+                        <div key={fi} className="space-y-1">
+                          <p className="text-sm font-semibold text-foreground leading-6">{f.question}</p>
+                          <p className="text-sm text-foreground/80 leading-7">{renderInlineLinks(f.answer)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+                i++;
+              } else if (paragraph.startsWith("[[CTA:") && paragraph.endsWith("]]")) {
+                const label = paragraph.slice("[[CTA:".length, -2);
+                elements.push(
+                  <div key={`cta-${i}`} className="rounded-lg border border-border/50 bg-muted/20 p-4 my-6">
+                    <Link href="/">
+                      <Button size="sm" data-testid={`button-inline-cta-${i}`}>
+                        {label} →
+                      </Button>
+                    </Link>
+                  </div>
+                );
+                i++;
+              } else if (paragraph.startsWith("- ")) {
                 // Collect consecutive bullet items
                 const bullets: string[] = [];
                 while (i < post.body.length && post.body[i].startsWith("- ")) {

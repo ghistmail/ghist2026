@@ -12,6 +12,16 @@ export interface BlogPost {
   bodyImage: string;  // mid-article image
   bodyImageAlt: string;
   body: string[];
+  // Optional: two-column comparison table, rendered right after the marker "[[TABLE]]" in body
+  table?: {
+    title: string;
+    leftHeader: string;
+    rightHeader: string;
+    leftItems: string[];
+    rightItems: string[];
+  };
+  // Optional: FAQ list, rendered right after the marker "[[FAQS]]" in body
+  faqs?: { question: string; answer: string }[];
 }
 
 export const blogPosts: BlogPost[] = [
@@ -476,43 +486,103 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "is-temporary-email-safe",
     title: "Is Temporary Email Safe? A Practical Guide to Privacy, Verification and Risk",
-    excerpt: "Temporary email is safe for the low-stakes signups it was built for, and genuinely risky if you use it for the wrong things. Here is exactly where the line sits.",
-    metaDesc: "Temporary email is safe for the low-stakes signups it was built for, and genuinely risky if you use it for the wrong things. Here is exactly where the line sits.",
+    excerpt: "Short answer: temporary email is safe for low-stakes, one-off tasks, but it is not built for sensitive or recoverable accounts. Here is exactly where the line sits.",
+    metaDesc: "Temporary email is safe for low-stakes, one-off tasks like downloads, trials and signups — but not for sensitive or recoverable accounts. Here is the practical breakdown.",
     publishDate: "2025-06-20",
-    readTime: "6 min read",
+    readTime: "7 min read",
     category: "Guide",
     tags: ["temporary email", "privacy", "security"],
     heroImage: "/hero-temp-email-safety.jpg",
     heroAlt: "Padlock resting on a computer keyboard representing digital security",
     bodyImage: "/body-temp-email-safety.jpg",
     bodyImageAlt: "Server room corridor with rows of illuminated equipment racks",
+    table: {
+      title: "Safe for vs do not use for",
+      leftHeader: "Safe for",
+      rightHeader: "Do not use for",
+      leftItems: [
+        "One-off downloads (reports, templates, guides)",
+        "Newsletters you are not sure you want long-term",
+        "Free trials with no card, or ones you'll only use briefly",
+        "Disposable or throwaway accounts you won't return to",
+        "Wi-Fi portals, contests and gated content",
+      ],
+      rightItems: [
+        "Banking and other financial accounts",
+        "Payments or anything tied to a card or transaction history",
+        "Government services (tax, ID, licensing, benefits)",
+        "Health and healthcare portals",
+        "Work or employer accounts",
+        "Password resets on accounts you still need",
+        "Important 2FA/OTP tied to an account you'll keep",
+        "Any account you may need to access again later",
+      ],
+    },
+    faqs: [
+      {
+        question: "Is temporary email actually safe to use?",
+        answer:
+          "Yes, for what it's designed for. Using a temporary address for a one-off signup, download or trial is generally safer than handing over your real inbox, because there's no long-lived address left behind for a breached or spammy site to exploit. It's unsafe only when you use it somewhere that needs long-term recovery, such as banking, healthcare, government or work accounts.",
+      },
+      {
+        question: "Does temporary email make me anonymous online?",
+        answer:
+          "No. A temporary address hides your real email from the site you give it to, but it does not make you anonymous. [Ghist](https://ghist.email) still processes session data and message content to run the inbox, and the site uses Google Analytics and Google AdSense, which can collect technical data like your IP address and browser details (see the [privacy policy](https://ghist.email/privacy)). Temporary email reduces one specific kind of exposure — it is not a full anonymity tool.",
+      },
+      {
+        question: "Can I use a temporary email for verification codes?",
+        answer:
+          "Yes, but only when the account behind the code is itself disposable. If you're clearing a one-time signup gate for something you won't return to, a temporary address works exactly like a normal inbox for that code. If the account will need future emails — a password reset, a security alert, a login code next month — do not use a temporary address, because the inbox and the code will already be gone.",
+      },
+      {
+        question: "Is it safe to use temporary email for free trials?",
+        answer:
+          "For trials with no card required, yes — you get the verification email, use the trial, and there's nothing to lose when the inbox expires. If a trial requires a credit card and auto-converts to a paid subscription, temporary email doesn't protect you from being charged, since billing is tied to your card, not your inbox. Read the trial terms and don't rely on a disappearing inbox to dodge a subscription.",
+      },
+      {
+        question: "What happens if I need to recover an account linked to a temporary email?",
+        answer:
+          "You likely can't. At [Ghist](https://ghist.email), inboxes and their contents are permanently deleted 24 hours after creation, with no recovery option (see the [terms of service](https://ghist.email/terms)). If a service ever needs to send a password reset or account recovery link to that address after it has expired, that message will go nowhere. This is exactly why temporary email should never be used for any account you might need to get back into later.",
+      },
+    ],
     body: [
-      "Temporary email is safe when you use it for what it is designed for: short-term, low-stakes signups where you do not need the account back later. It becomes unsafe the moment you use it somewhere that demands long-term access, identity verification or financial trust. The tool itself is not the risk — using it in the wrong place is.",
-      "That distinction matters more than any generic \"is it safe\" headline can capture, so let's break down where the real risk sits.",
-      "What Makes Temporary Email Genuinely Safe",
-      "For the use case it is built for, temporary email reduces your risk compared with using your real inbox. Every address you hand out becomes a permanent thread that connects back to you — a potential leak point if that service gets breached, sells data, or gets sloppy with retention.",
-      "A temporary inbox from [Ghist](https://ghist.email) breaks that thread deliberately. The address works long enough to receive what you need, then it and everything in it are deleted after 24 hours. If the site you signed up for is later breached, there is no live inbox for that stolen address to lead back to — it is already gone. Reputable providers also run infrastructure with proper encryption in transit, so the mechanics of using the service are not themselves a weak point.",
+      "Short answer: temporary email is safe for low-stakes, one-off tasks — downloads, newsletters, trials, disposable accounts — but it is not built for anything sensitive or anything you'll need to recover later. The tool itself isn't risky. Using it for the wrong kind of account is where people get burned.",
+      "Here's the practical breakdown of where that line actually sits, what a temporary inbox genuinely protects, and where it can quietly leave you locked out.",
+      "[[TABLE]]",
+      "[[CTA:Create a Ghist address for a low-stakes signup]]",
+      "What It Protects—and What It Doesn't",
+      "A temporary address gives you one specific, real benefit: it keeps your permanent inbox off a site's mailing list. Every address you hand out becomes a standing link back to you — a potential spam source or a leak point if that service is later breached or sells its list. A [Ghist](https://ghist.email) address breaks that link on purpose. Once the inbox is deleted, there is no live mailbox for a leaked address to lead back to.",
+      "That is the extent of the guarantee, and it's worth being precise about what it does not cover.",
+      "It does not guarantee anonymity. [Ghist](https://ghist.email) still stores the mailbox address, a session identifier and incoming message content — including sender, subject and headers — for as long as the inbox is active, and the site runs Google Analytics and Google AdSense, which can collect IP address, device and browsing data through their own systems (full detail in the [privacy policy](https://ghist.email/privacy)). A temporary email hides your address from the site you sign up with; it does not make your visit to that site or to Ghist untraceable.",
+      "It does not vouch for the website you're signing up with. Temporary email only protects your inbox. It says nothing about whether the site on the other end is trustworthy, secure, or handling your other details responsibly.",
+      "It does not offer account recovery. [Ghist](https://ghist.email)'s terms are explicit that deleted mailboxes and messages cannot be recovered under any circumstances. If you need a password reset, a login code, or any follow-up message after the inbox expires, there is no path back in.",
+      "It does not function as secure long-term storage. Inboxes and their contents are permanently deleted 24 hours after creation, by design. Nothing is retained past that window, which is good for privacy but means a temporary inbox is never a place to leave anything you need later — by the time you'd go looking, it's already gone.",
       "Where the Real Risk Actually Lives",
-      "The risk in temporary email is almost never in the technology. It is in the mismatch between what the service is for and what you are trying to do with it.",
-      "Every one of these scenarios is a case where the underlying tool is fine, but the application is wrong.",
-      "Never Use Temporary Email For",
-      "Some categories are non-negotiable exclusions, and they are worth stating plainly rather than hedging:",
-      "- Banking and financial accounts — you need password recovery and fraud alerts to reach you reliably, forever",
-      "- Healthcare portals — medical records and appointment access require long-term continuity",
-      "- Government services — tax, ID, licensing and benefits systems are built around a stable, verifiable identity",
-      "- Any account requiring long-term access — subscriptions, employers, tools you plan to actually keep using",
-      "If your relationship with a service needs to survive longer than a day, a 24-hour inbox is structurally the wrong fit, not just a risky choice.",
+      "The risk with temporary email is almost never in the technology. It's in the mismatch between what the account is for and how long you'll actually need it.",
+      "Every scenario below is a case where the tool works fine — the problem is only ever the application.",
+      "Do Not Use Temporary Email For",
+      "Some categories are non-negotiable exclusions, worth stating plainly rather than hedging:",
+      "- Banking and other financial accounts, where you need fraud alerts and recovery options to reach you reliably, indefinitely",
+      "- Payments or anything tied to a card or ongoing transaction history",
+      "- Government services — tax, ID, licensing and benefits systems assume a stable, verifiable contact address",
+      "- Health and healthcare portals, where appointment and records access needs long-term continuity",
+      "- Work or employer accounts tied to your job",
+      "- Password resets on any account you still use or plan to use again",
+      "- Important two-factor authentication (2FA) or OTPs tied to an account you intend to keep",
+      "- Any account you may need to access again later, for any reason",
+      "If there's a real chance you'll need that inbox to still exist in a week, a month or a year, a 24-hour address is the wrong tool by design — not just a riskier choice.",
       "Scenario Check: Appropriate vs Not Appropriate",
       "A few concrete examples make the boundary obvious.",
-      "Downloading a white paper or template is appropriate, because the value is delivered instantly and there is no reason to expect follow-up access — the risk of using temporary email here is essentially zero. Signing up for a one-week app trial with no card required is appropriate for the same reason: you get the access, use it, and walk away clean.",
-      "Opening a bank account is not appropriate, because you will need password resets, fraud alerts and long-term correspondence for years — a deleted inbox breaks all of that permanently. Registering for a service tied to your legal identity, like a government portal, is not appropriate either, because those systems assume your contact details remain valid and reachable.",
-      "The pattern is consistent: appropriate use cases have no future dependency on the inbox. Inappropriate ones do.",
-      "Does Temporary Email Help or Hurt Verification?",
-      "Verification is where people get the most confused, so it is worth being precise. Using a temporary address to receive a one-time signup verification code is fine — that is exactly the kind of single-use transaction the tool is built for.",
-      "Using a temporary address as your identity verification method for an account that requires ongoing proof of who you are — banking KYC, government ID checks, healthcare portals — is a different thing entirely, and it will fail you. Those systems are designed around the assumption that your registered email is stable and permanent. A [Ghist](https://ghist.email) address deleting itself after 24 hours is not a security flaw in that context; it is simply the wrong tool for a job that needs permanence.",
-      "The Practical Safety Test",
-      "Before using a temporary email address anywhere, ask one question: if this account gets locked, or I need a password reset in three months, does that matter to me?",
-      "If it does not matter — you are downloading something, testing something, or signing up for something disposable — temporary email is safe and arguably safer than using your real address. If it does matter, even a little, use your permanent inbox. The safety of the tool depends entirely on matching it to the right job, and [Ghist](https://ghist.email) is explicit about this: for temporary use only, never for banking, healthcare, government, or anything requiring long-term access.",
+      "Downloading a white paper or template is appropriate, because the value is delivered instantly and there's no reason to expect follow-up contact — the risk here is essentially zero. Signing up for a short trial with no card required is appropriate for the same reason: you get access, use it, and walk away with nothing left hanging.",
+      "Opening a bank account is not appropriate, because you'll need password resets, fraud alerts and long-term correspondence for years — a deleted inbox breaks all of that permanently. Registering for a government portal tied to your legal identity is not appropriate either, because those systems assume your contact details stay valid and reachable indefinitely.",
+      "The pattern holds every time: appropriate use cases have no future dependency on the inbox existing. Inappropriate ones do.",
+      "Clarifying Verification Codes and OTPs",
+      "Verification is where people get confused most often, so it's worth being precise. A temporary address is fine for a one-time signup verification code — that's exactly the single-use transaction the tool is built for.",
+      "The distinction that actually matters is this: only use a temporary address for a verification code or OTP where the underlying account is also disposable. If you're clearing a signup gate for a tool you'll use once and never return to, the code and the account are both throwaway — no problem. If the account behind that code is one you plan to keep, or if it might email you a security code, password reset or login link again later, a temporary address will work for the first code and then fail you completely the moment the inbox expires. The code being temporary doesn't matter if the account you attached it to is not.",
+      "[[FAQS]]",
+      "[[CTA:Use a permanent email for accounts you may need later]]",
+      "One More Thing Worth Reading",
+      "If you're still deciding when a disposable address makes sense day-to-day, the breakdown in [when to use — and when not to use — a temporary email address](https://ghist.email/blog/when-to-use-temporary-email) covers the everyday cases in more detail.",
     ],
   },
   {
