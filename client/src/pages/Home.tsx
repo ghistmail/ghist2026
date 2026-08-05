@@ -10,7 +10,7 @@ import { EmailAddress } from "@/components/EmailAddress";
 import { InboxList, EmailCardSkeleton } from "@/components/InboxList";
 import { MessageDetail } from "@/components/MessageDetail";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2, Tag, MessageSquare, Wifi, Bot, KeyRound } from "lucide-react";
+import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2, Tag, MessageSquare, Wifi, Bot, KeyRound, Heart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
 import { StatsBar } from "@/components/StatsBar";
@@ -460,16 +460,17 @@ export default function Home() {
         <section className="bg-background px-5 sm:px-8 py-2">
           <div className="max-w-3xl mx-auto">
             <div className="bg-card border border-border/40 rounded-2xl px-5 py-4 text-center">
-              <p className="text-sm sm:text-base font-body text-foreground">
-                <span aria-hidden="true">💙</span> Love Ghist? Support free private email{" "}
-                <span aria-hidden="true">→</span>{" "}
+              <p className="text-sm sm:text-base font-body text-foreground inline-flex flex-wrap items-center justify-center gap-1.5">
+                <Heart className="w-4 h-4 text-primary fill-primary shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                <span>Love Ghist? Help keep it free</span>
+                <span aria-hidden="true">→</span>
                 <a
                   href="https://omg10.com/4/11508180"
                   target="_blank"
                   rel="noopener noreferrer sponsored"
                   className="font-semibold text-primary hover:underline underline-offset-2"
                 >
-                  view sponsor ads
+                  View sponsor ads
                 </a>
               </p>
             </div>
