@@ -456,6 +456,26 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Support notice ───────────────────────────────────── */}
+        <section className="bg-background px-5 sm:px-8 py-2">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-card border border-border/40 rounded-2xl px-5 py-4 text-center">
+              <p className="text-sm sm:text-base font-body text-foreground">
+                Love using Ghist? Help us keep it free{" "}
+                <span aria-hidden="true">→</span>{" "}
+                <a
+                  href="https://omg10.com/4/11508180"
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className="font-semibold text-primary hover:underline underline-offset-2"
+                >
+                  Ads help keep it free
+                </a>
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* ── Privacy notice ────────────────────────────────────── */}
         <section className="bg-muted/10 px-5 sm:px-8 py-5">
           <div className="max-w-3xl mx-auto">
