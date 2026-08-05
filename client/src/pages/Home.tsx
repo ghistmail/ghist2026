@@ -14,6 +14,7 @@ import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2,
 import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
 import { StatsBar } from "@/components/StatsBar";
+import { BannerAd320x250 } from "@/components/BannerAd";
 
 // ── Worker backend (inkpost.org · copydesk.cc · doomdeluxe.com) ─────────────
 const WORKER_BASE = "https://inkpost-email-worker.alexwain-gh.workers.dev";
@@ -453,6 +454,13 @@ export default function Home() {
                 </>
               )}
             </div>
+          </div>
+        </section>
+
+        {/* ── Ad: 320x250 banner (HilltopAds zone #7292013) ───────── */}
+        <section className="bg-background px-5 sm:px-8 py-2">
+          <div className="max-w-3xl mx-auto">
+            <BannerAd320x250 />
           </div>
         </section>
 
