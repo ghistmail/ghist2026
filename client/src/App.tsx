@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LocaleSuggestionToast } from "@/components/LocaleSuggestionToast";
+import { HilltopPush } from "@/components/HilltopPush";
 import Home from "@/pages/Home";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
@@ -47,6 +48,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <LocaleSuggestionToast />
+          <HilltopPush />
           <Router>
             <AppRouter />
           </Router>
