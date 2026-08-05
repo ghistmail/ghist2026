@@ -580,7 +580,6 @@ export const blogPosts: BlogPost[] = [
       "Verification is where people get confused most often, so it's worth being precise. A temporary address is fine for a one-time signup verification code — that's exactly the single-use transaction the tool is built for.",
       "The distinction that actually matters is this: only use a temporary address for a verification code or OTP where the underlying account is also disposable. If you're clearing a signup gate for a tool you'll use once and never return to, the code and the account are both throwaway — no problem. If the account behind that code is one you plan to keep, or if it might email you a security code, password reset or login link again later, a temporary address will work for the first code and then fail you completely the moment the inbox expires. The code being temporary doesn't matter if the account you attached it to is not.",
       "[[FAQS]]",
-      "[[CTA:Use a permanent email for accounts you may need later]]",
       "One More Thing Worth Reading",
       "If you're still deciding when a disposable address makes sense day-to-day, the breakdown in [when to use — and when not to use — a temporary email address](https://ghist.email/blog/when-to-use-temporary-email) covers the everyday cases in more detail.",
     ],
@@ -594,8 +593,8 @@ export const blogPosts: BlogPost[] = [
     readTime: "7 min read",
     category: "Guide",
     tags: ["temporary email", "email alias", "Hide My Email"],
-    heroImage: "/hero-email-alias-comparison.jpg",
-    heroAlt: "Three diverging paths representing a decision between different email privacy tools",
+    heroImage: "/body-temp-email.jpg",
+    heroAlt: "Close-up of a smartphone Mail app icon showing unread email notifications",
     bodyImage: "/body-email-alias-comparison.jpg",
     bodyImageAlt: "Hand holding a smartphone displaying colorful app icons",
     body: [
@@ -674,4 +673,13 @@ export function getBlogPostBySlug(slug: string): BlogPost | undefined {
 
 export function getBlogCategories(): string[] {
   return Array.from(new Set(blogPosts.map((p) => p.category)));
+}
+
+// Published posts sorted newest-first by publishDate. Use this (not the raw
+// blogPosts array) anywhere posts are listed, so the most recently published
+// story always appears first regardless of source array order.
+export function getSortedBlogPosts(): BlogPost[] {
+  return [...blogPosts].sort(
+    (a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
+  );
 }

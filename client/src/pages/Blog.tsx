@@ -3,7 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Link } from "wouter";
 import { ArrowLeft, Clock, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { blogPosts, getBlogCategories } from "@/lib/blogData";
+import { getSortedBlogPosts, getBlogCategories } from "@/lib/blogData";
 import { useState } from "react";
 import { useLocale, t } from "@/lib/i18n";
 
@@ -27,9 +27,10 @@ export default function Blog() {
   const categories = getBlogCategories();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+  const sortedPosts = getSortedBlogPosts();
   const filtered = activeCategory
-    ? blogPosts.filter((p) => p.category === activeCategory)
-    : blogPosts;
+    ? sortedPosts.filter((p) => p.category === activeCategory)
+    : sortedPosts;
 
   const [featured, ...rest] = filtered;
 

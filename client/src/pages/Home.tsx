@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
-import { blogPosts } from "@/lib/blogData";
+import { getSortedBlogPosts } from "@/lib/blogData";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { type Mailbox, type Message } from "@shared/schema";
@@ -565,7 +565,7 @@ export default function Home() {
               <h2 className="text-base sm:text-lg font-display font-semibold text-foreground">Latest articles</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {blogPosts.slice(0, 3).map((post) => (
+              {getSortedBlogPosts().slice(0, 3).map((post) => (
                 <Link
                   key={post.slug}
                   href={`/blog/${post.slug}`}
