@@ -461,7 +461,7 @@ export default function Home() {
           <div className="max-w-3xl mx-auto">
             <div className="bg-card border border-border/40 rounded-2xl px-5 py-4 text-center">
               <p className="text-sm sm:text-base font-body text-foreground">
-                Love using Ghist? Help us keep it free{" "}
+                <span aria-hidden="true">💙</span> Love Ghist? Support free private email{" "}
                 <span aria-hidden="true">→</span>{" "}
                 <a
                   href="https://omg10.com/4/11508180"
@@ -469,7 +469,7 @@ export default function Home() {
                   rel="noopener noreferrer sponsored"
                   className="font-semibold text-primary hover:underline underline-offset-2"
                 >
-                  Ads help keep it free
+                  view sponsor ads
                 </a>
               </p>
             </div>
