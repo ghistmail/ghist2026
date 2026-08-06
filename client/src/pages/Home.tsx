@@ -578,6 +578,27 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Support notice (2nd placement, above blog) ─────────────── */}
+        <section className="bg-background px-5 sm:px-8 py-2">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-card border border-border/40 rounded-2xl px-5 py-4 text-center">
+              <p className="text-sm sm:text-base font-body text-foreground inline-flex flex-wrap items-center justify-center gap-1.5">
+                <Heart className="w-4 h-4 text-primary fill-primary shrink-0 animate-heartbeat motion-reduce:animate-none" strokeWidth={1.5} aria-hidden="true" />
+                <span>Love Ghist? Help keep it free</span>
+                <span aria-hidden="true">→</span>
+                <a
+                  href="https://omg10.com/4/11508180"
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className="font-semibold text-primary hover:underline underline-offset-2"
+                >
+                  View sponsor ads
+                </a>
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* ── Latest blogs section ────────────────────────────────────── */}
         <section className="px-5 sm:px-8 py-10">
           <div className="max-w-3xl mx-auto">
