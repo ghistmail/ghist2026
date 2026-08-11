@@ -465,7 +465,7 @@ export default function Home() {
                 <span>Love Ghist? Help keep it free</span>
                 <span aria-hidden="true">→</span>
                 <a
-                  href="https://omg10.com/4/11508180"
+                  href="https://omg10.com/4/11515151"
                   target="_blank"
                   rel="noopener noreferrer sponsored"
                   className="font-semibold text-primary hover:underline underline-offset-2"
@@ -587,7 +587,7 @@ export default function Home() {
                 <span>Love Ghist? Help keep it free</span>
                 <span aria-hidden="true">→</span>
                 <a
-                  href="https://omg10.com/4/11508180"
+                  href="https://omg10.com/4/11515151"
                   target="_blank"
                   rel="noopener noreferrer sponsored"
                   className="font-semibold text-primary hover:underline underline-offset-2"
