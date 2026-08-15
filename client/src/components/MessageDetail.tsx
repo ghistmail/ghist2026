@@ -2,9 +2,9 @@ import { type Message } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ExternalLink, Copy, Check } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
-import DOMPurify from "dompurify";
-import { useState, useMemo, useRef, useEffect } from "react";
+import { Component, type ReactNode, useState, useMemo, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { sanitizeEmailHtml } from "@/lib/sanitizeEmailHtml";
 
 // --- pickRenderablePart ---
 // Returns { mode: "html", content } if htmlBody is non-empty, else plain-text fallback.
@@ -65,6 +65,32 @@ function extractLinks(html: string): { href: string; text: string }[] {
     }
   });
   return links;
+}
+
+// --- EmailErrorBoundary ---
+// FIX: no error boundary existed anywhere in the app. Any exception thrown
+// during EmailIframe's render or effects (e.g. an unexpected DOM shape from
+// a real-world email that the sanitisation pipeline didn't already guard
+// against) previously propagated up uncaught, silently leaving the Original
+// tab blank with no visible error and no fallback. This boundary catches
+// that class of failure and reports it via onError so the parent can fall
+// through to the working Reader-equivalent markup instead.
+class EmailErrorBoundary extends Component<
+  { children: ReactNode; onError: () => void },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("[EmailErrorBoundary] caught render error, falling back to Reader view:", error);
+    this.props.onError();
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
 }
 
 // --- HtmlEmailViewer ---
@@ -162,221 +188,24 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
     [message]
   );
 
-  const sanitizedHtml = useMemo(() => {
-    if (!message.htmlBody) return null;
+  const sanitizedHtml = useMemo(
+    () => sanitizeEmailHtml(message.htmlBody, window.location.origin),
+    [message.htmlBody]
+  );
 
-    // ── Step 0: unwrap provider image proxy rewrites ──
-    // Guerrilla Mail (and some other providers) rewrite every <img src="https://...">
-    // to their own relative proxy path: /res.php?r=1&n=img&q=<encoded_original_url>
-    // These relative URLs resolve against about:srcdoc in the iframe and never load.
-    // Extract the original URL from the q= parameter and restore it.
-    const unwrapped = message.htmlBody
-      // Handle src="/res.php?...&q=<encoded>" on img/source elements
-      .replace(
-        /src=["']\/res\.php[^"']*?[?&](?:amp;)?q=([^&"'\s]+)[^"']*?["']/gi,
-        (_m: string, encoded: string) => {
-          try {
-            const url = decodeURIComponent(encoded);
-            if (/^https?:\/\//.test(url)) return `src="${url}"`;
-          } catch { /* ignore */ }
-          return _m;
-        }
-      )
-      // Handle background-image:url(&quot;/res.php?...q=...&quot;) in style attrs
-      .replace(
-        /url\((?:&quot;|["']?)\/res\.php[^)]*?[?&](?:amp;)?q=([^&)"';\s]+)[^)]*?(?:&quot;|["']?)\)/gi,
-        (_m: string, encoded: string) => {
-          try {
-            const url = decodeURIComponent(encoded);
-            if (/^https?:\/\//.test(url)) return `url("${url}")`;
-          } catch { /* ignore */ }
-          return _m;
-        }
-      );
+  // FIX: gate the Original tab on actually having renderable HTML. Previously
+  // the Original branch always mounted EmailIframe with `sanitizedHtml ?? ""`,
+  // so any pipeline failure or empty sanitisation result produced a live,
+  // correctly-sized iframe with a completely empty document — exactly the
+  // "blank box" symptom, indistinguishable from a real bug to the user, and
+  // with the tab still reading "Original". Falling through to the same markup
+  // used by the Reader tab guarantees the user always sees content on first
+  // load, and only ever shows an empty Original view if there genuinely is no
+  // content at all (in which case Reader would be equally empty).
+  const hasRenderableOriginal = !!sanitizedHtml && sanitizedHtml.trim().length > 0;
 
-    // ── Step 1: stash all http image URLs before DOMPurify can touch them ──
-    // DOMPurify v3 sanitises URI attributes and rewrites http src to "#".
-    // We swap them for data-ghist-src placeholders first, sanitise, then
-    // restore + proxy-rewrite afterwards.
-    const raw = unwrapped
-      .replace(/(<img[^>]*?)\ssrc=(")(https?:[^"]*?)("|)/gi, '$1 data-ghist-src=$2$3$4')
-      .replace(/(<img[^>]*?)\ssrc=(')(https?:[^']*?)('|)/gi, "$1 data-ghist-src=$2$3$4")
-      .replace(/(<source[^>]*?)\ssrc=(")(https?:[^"]*?)("|)/gi, '$1 data-ghist-src=$2$3$4');
-
-    // ── Step 2: sanitise — scripts/iframes out, everything structural kept ──
-    const clean = DOMPurify.sanitize(raw, {
-      WHOLE_DOCUMENT: true,
-      FORCE_BODY: true,
-      ADD_TAGS: [
-        "html", "head", "body", "meta", "title", "style", "link",
-        "center", "font", "small", "sup", "sub", "img", "picture", "source",
-        "table", "thead", "tbody", "tfoot", "tr", "td", "th",
-      ],
-      ADD_ATTR: [
-        "data-ghist-src", "srcset",
-        "alt", "width", "height", "border",
-        "align", "valign", "cellpadding", "cellspacing", "colspan", "rowspan",
-        "bgcolor", "color", "size", "face",
-        "charset", "name", "content", "http-equiv",
-        "rel", "type", "media", "background",
-      ],
-      FORBID_TAGS: ["script", "noscript", "iframe", "object", "embed", "form", "input", "button", "textarea"],
-      FORBID_ATTR: ["onclick", "ondblclick", "onerror", "onmouseover", "onmouseout", "onkeyup", "onkeydown", "onsubmit"],
-    });
-
-    const doc = new DOMParser().parseFromString(clean, "text/html");
-    // Opaque base64 payload under a short, non-signature-matching path/param —
-    // see the /api/media-relay note in server/routes.ts for why this changed
-    // from /api/imgproxy?url=<raw-url> (ad-blocker/Brave Shields false positive).
-    const proxyBase = `${window.location.origin}/api/media-relay?d=`;
-
-    const toProxy = (url: string) =>
-      url.startsWith("http")
-        ? proxyBase + encodeURIComponent(btoa(encodeURIComponent(url)))
-        : url;
-
-    // ── Step 2b: strip stealth/anti-AI content ────────────────────────────
-    // Remove nodes hidden via CSS tricks that could carry injected instructions
-    // invisible to the user but readable by AI agents parsing the DOM.
-    // 1. Inline display:none / visibility:hidden / zero-opacity / zero-font-size
-    // NOTE: white color is NOT removed — legitimate emails use white text on
-    // dark/coloured backgrounds. Only strip truly invisible elements.
-    doc.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
-      const s = (el.getAttribute("style") || "").toLowerCase();
-      if (
-        /display\s*:\s*none/.test(s) ||
-        /visibility\s*:\s*hidden/.test(s) ||
-        /opacity\s*:\s*0(?:[^.\d]|$)/.test(s) ||
-        /font-size\s*:\s*0(?:px|pt|em|rem|%)/.test(s) ||
-        /font-size\s*:\s*0(?:[^.\d]|$)/.test(s)
-      ) {
-        el.remove();
-      }
-    });
-    // 2. HTML comment nodes — can carry hidden instructions
-    const commentWalker = document.createTreeWalker(doc.documentElement, NodeFilter.SHOW_COMMENT);
-    const comments: Node[] = [];
-    while (commentWalker.nextNode()) comments.push(commentWalker.currentNode);
-    comments.forEach(c => c.parentNode?.removeChild(c));
-    // 3. Zero-width / invisible Unicode characters in text nodes
-    const textWalker = document.createTreeWalker(doc.documentElement, NodeFilter.SHOW_TEXT);
-    const textNodes: Text[] = [];
-    while (textWalker.nextNode()) textNodes.push(textWalker.currentNode as Text);
-    textNodes.forEach(tn => {
-      // Strip zero-width spaces, soft hyphens, invisible separators
-      tn.nodeValue = (tn.nodeValue || "").replace(/[\u00AD\u200B-\u200D\u2060\uFEFF\u034F]/g, "");
-    });
-
-    // ── Step 3: restore stashed src values and proxy them ──
-    doc.querySelectorAll("img[data-ghist-src], source[data-ghist-src]").forEach((el) => {
-      const original = el.getAttribute("data-ghist-src") || "";
-      el.setAttribute("src", toProxy(original));
-      el.removeAttribute("data-ghist-src");
-    });
-
-    // ── Step 4: proxy srcset ──
-    doc.querySelectorAll("[srcset]").forEach((el) => {
-      const rewritten = (el.getAttribute("srcset") || "")
-        .split(",")
-        .map(part => {
-          const [u, ...rest] = part.trim().split(/\s+/);
-          return u.startsWith("http") ? [toProxy(u), ...rest].join(" ") : part;
-        })
-        .join(", ");
-      el.setAttribute("srcset", rewritten);
-    });
-
-    // ── Step 5: proxy inline style background-image on elements ──
-    doc.querySelectorAll("[style]").forEach((el) => {
-      const s = el.getAttribute("style") || "";
-      const patched = s.replace(
-        /url\(['"]?(https?:[^'")]+)['"]?\)/gi,
-        (_, u) => `url(${toProxy(u)})`
-      );
-      if (patched !== s) el.setAttribute("style", patched);
-    });
-
-    // ── Step 6: proxy background= attribute (old-school HTML emails) ──
-    doc.querySelectorAll("[background]").forEach((el) => {
-      const bg = el.getAttribute("background") || "";
-      if (bg.startsWith("http")) el.setAttribute("background", toProxy(bg));
-    });
-
-    // ── Step 7: proxy URLs inside <style> blocks ──
-    doc.querySelectorAll("style").forEach((style) => {
-      style.textContent = (style.textContent || "").replace(
-        /url\(['"]?(https?:[^'")]+)['"]?\)/gi,
-        (_, u) => `url(${toProxy(u)})`
-      );
-    });
-
-    // ── Step 8: links open in new tab, scrub javascript: hrefs ──
-    doc.querySelectorAll("a").forEach((a) => {
-      const href = a.getAttribute("href") || "";
-      if (href.toLowerCase().startsWith("javascript")) {
-        a.removeAttribute("href");
-      } else {
-        a.setAttribute("target", "_blank");
-        a.setAttribute("rel", "noopener noreferrer");
-      }
-    });
-
-    // ── Step 9: <base href> so proxied absolute URLs resolve correctly ──
-    // Also inject a viewport meta and responsive override CSS so wide email
-    // tables scale down to fit mobile screens inside the iframe.
-    const head = doc.head || doc.documentElement;
-
-    const base = doc.createElement("base");
-    base.setAttribute("href", window.location.origin + "/");
-    base.setAttribute("target", "_blank");
-    head.insertBefore(base, head.firstChild);
-
-    // Viewport meta — required for mobile scaling inside srcdoc iframe
-    const viewport = doc.createElement("meta");
-    viewport.setAttribute("name", "viewport");
-    viewport.setAttribute("content", "width=device-width, initial-scale=1.0");
-    head.insertBefore(viewport, base.nextSibling);
-
-    // ── Step 9b: strip pixel width attrs from ALL tables ──
-    // Inline width="600"/"560" attributes override any CSS width rules.
-    // The only safe way to make nested email tables fluid is to remove the
-    // pixel width attribute from every table (td/th widths are left alone so
-    // column proportion hints are preserved). We stash the largest value as
-    // max-width on the outermost table so it still constrains on wide screens.
-    let maxTablePx = 0;
-    doc.querySelectorAll("table").forEach((el) => {
-      const w = el.getAttribute("width");
-      if (w && /^\d+$/.test(w.trim())) {
-        const px = parseInt(w, 10);
-        if (px > maxTablePx) maxTablePx = px;
-        el.removeAttribute("width");
-      }
-    });
-    // Apply max-width constraint to the outermost wrapper table only
-    const outerTable = doc.body?.querySelector(
-      ":scope > table, :scope > center > table, :scope > div > table"
-    ) as HTMLElement | null;
-    if (outerTable && maxTablePx > 0) {
-      outerTable.style.maxWidth = maxTablePx + "px";
-    }
-
-    // Responsive override: scale email to viewport
-    const style = doc.createElement("style");
-    style.textContent = [
-      // Root containment — srcdoc document must not exceed iframe width
-      "html, body { width:100%!important; max-width:100%!important;"
-        + " margin:0!important; padding:0!important; overflow-x:hidden!important; }",
-      // All tables fluid — width attrs already stripped above
-      "table { width:100%!important; max-width:100%!important; }",
-      // Images scale down, never overflow
-      "img { max-width:100%!important; height:auto!important; display:block; }",
-      // Cells clip cleanly
-      "td, th { word-break:break-word; box-sizing:border-box; }",
-    ].join(" ");
-    head.appendChild(style);
-
-    return doc.documentElement.outerHTML;
-  }, [message.htmlBody]);
+  const [boundaryError, setBoundaryError] = useState(false);
+  useEffect(() => setBoundaryError(false), [message.id]);
 
   const links = useMemo(
     () => (message.htmlBody ? extractLinks(message.htmlBody) : []),
@@ -512,12 +341,22 @@ export function MessageDetail({ message, onBack }: MessageDetailProps) {
 
         {/* Email body */}
         <div className="pt-2" data-testid="text-email-body">
-          {renderable.mode === "html" && view === "original" ? (
-            // HtmlEmailViewer: original HTML in isolated iframe, no links block prepended
-            <div data-trust-level="untrusted" aria-label="Email content from untrusted sender">
-              <EmailIframe html={sanitizedHtml ?? ""} />
-            </div>
-          ) : renderable.mode === "html" && view === "reader" ? (
+          {renderable.mode === "html" && view === "original" && hasRenderableOriginal && !boundaryError ? (
+            // HtmlEmailViewer: original HTML in isolated iframe, no links block prepended.
+            // FIX: previously rendered EmailIframe unconditionally with
+            // `sanitizedHtml ?? ""`. If sanitisation produced null/empty output
+            // (pipeline failure, or content that sanitised down to nothing) the
+            // iframe silently got an empty srcdoc with no indication anything
+            // went wrong — a blank box on first load. `hasRenderableOriginal`
+            // guards that case; `boundaryError` (set by EmailErrorBoundary) also
+            // catches any exception thrown during the iframe's own render/effect
+            // phase and falls through to the same Reader markup below.
+            <EmailErrorBoundary onError={() => setBoundaryError(true)}>
+              <div data-trust-level="untrusted" aria-label="Email content from untrusted sender">
+                <EmailIframe html={sanitizedHtml as string} />
+              </div>
+            </EmailErrorBoundary>
+          ) : renderable.mode === "html" ? (
             // ReaderView: simplified text rendering (links block shown here only)
             <div className="space-y-4">
               {links.length > 0 && (
