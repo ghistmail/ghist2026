@@ -141,6 +141,38 @@ describe("sanitizeEmailHtml", () => {
     expect(text).toContain("visible content");
   });
 
+  it("preserves Klaviyo/MJML layout wrappers that use font-size:0 to remove inline-block whitespace", () => {
+    const out = sanitizeEmailHtml(
+      `<html><body>
+        <div style="display:none;font-size:1px;opacity:0">Hidden preheader</div>
+        <table role="presentation">
+          <tr>
+            <td style="direction:ltr;font-size:0px;padding:0;text-align:center">
+              <div class="component-wrapper" style="font-size:0px;text-align:left;width:100%">
+                <table role="presentation">
+                  <tr>
+                    <td class="kl-image" style="font-size:0px;word-break:break-word">
+                      <div style="font-size:16px">Welcome To The Collective</div>
+                      <img src="https://example.com/welcome.png" alt="Welcome artwork">
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </body></html>`,
+      ORIGIN
+    );
+
+    const doc = new DOMParser().parseFromString(out!, "text/html");
+    expect(doc.querySelector(".component-wrapper")).not.toBeNull();
+    expect(doc.querySelector(".kl-image")).not.toBeNull();
+    expect(doc.querySelector('img[alt="Welcome artwork"]')).not.toBeNull();
+    expect(visibleText(out!)).toContain("Welcome To The Collective");
+    expect(visibleText(out!)).not.toContain("Hidden preheader");
+  });
+
   it("strips HTML comments and zero-width unicode characters from text nodes", () => {
     const out = sanitizeEmailHtml(
       `<html><body><p>hello<!-- secret comment -->wor\u200Bld</p></body></html>`,

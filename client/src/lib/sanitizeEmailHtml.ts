@@ -119,16 +119,31 @@ function runPipeline(htmlBody: string, origin: string): string {
   // 1. Inline display:none / visibility:hidden / zero-opacity / zero-font-size
   // NOTE: white color is NOT removed — legitimate emails use white text on
   // dark/coloured backgrounds. Only strip truly invisible elements.
+  //
+  // IMPORTANT: Klaviyo/MJML sets font-size:0 on structural td/div wrappers to
+  // eliminate inline-block whitespace. Those wrappers contain child tables,
+  // images, and explicitly sized text. Removing the whole wrapper therefore
+  // deletes visible email sections. Treat zero-font *leaf* content as hidden,
+  // but preserve zero-font containers and remove only their direct text nodes;
+  // visible descendants establish their own font size.
   doc.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
     const s = (el.getAttribute("style") || "").toLowerCase();
-    if (
+    const fullyHidden =
       /display\s*:\s*none/.test(s) ||
       /visibility\s*:\s*hidden/.test(s) ||
-      /opacity\s*:\s*0(?:[^.\d]|$)/.test(s) ||
+      /opacity\s*:\s*0(?:[^.\d]|$)/.test(s);
+    const zeroFont =
       /font-size\s*:\s*0(?:px|pt|em|rem|%)/.test(s) ||
-      /font-size\s*:\s*0(?:[^.\d]|$)/.test(s)
-    ) {
+      /font-size\s*:\s*0(?:[^.\d]|$)/.test(s);
+
+    if (fullyHidden || (zeroFont && el.childElementCount === 0)) {
       el.remove();
+    } else if (zeroFont) {
+      Array.from(el.childNodes).forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE && node.nodeValue?.trim()) {
+          node.parentNode?.removeChild(node);
+        }
+      });
     }
   });
   // 2. HTML comment nodes — can carry hidden instructions
