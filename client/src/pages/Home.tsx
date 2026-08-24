@@ -10,7 +10,7 @@ import { EmailAddress } from "@/components/EmailAddress";
 import { InboxList, EmailCardSkeleton } from "@/components/InboxList";
 import { MessageDetail } from "@/components/MessageDetail";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2, Tag, MessageSquare, Wifi, Bot, KeyRound, Heart } from "lucide-react";
+import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2, Tag, MessageSquare, Wifi, Bot, KeyRound } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
 import { StatsBar } from "@/components/StatsBar";
@@ -123,6 +123,92 @@ function mapMessage(m: any, mailboxAddress: string): Message {
   } as Message;
 }
 // ─────────────────────────────────────────────────────────────────────────────
+
+type LazyBidVertiserAdProps = {
+  bid: number;
+  width: 728 | 300;
+  height: 90 | 250;
+  className: string;
+  mediaQuery: string;
+};
+
+function LazyBidVertiserAd({
+  bid,
+  width,
+  height,
+  className,
+  mediaQuery,
+}: LazyBidVertiserAdProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    if (shouldLoad) return;
+
+    const media = window.matchMedia(mediaQuery);
+    let observer: IntersectionObserver | undefined;
+
+    const observeWhenEligible = () => {
+      observer?.disconnect();
+      observer = undefined;
+
+      if (!media.matches || !containerRef.current) return;
+
+      if (!("IntersectionObserver" in window)) {
+        setShouldLoad(true);
+        return;
+      }
+
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setShouldLoad(true);
+            observer?.disconnect();
+          }
+        },
+        { rootMargin: "200px 0px" },
+      );
+      observer.observe(containerRef.current);
+    };
+
+    observeWhenEligible();
+    media.addEventListener("change", observeWhenEligible);
+
+    return () => {
+      observer?.disconnect();
+      media.removeEventListener("change", observeWhenEligible);
+    };
+  }, [mediaQuery, shouldLoad]);
+
+  const adDocument = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;overflow:hidden;width:${width}px;height:${height}px"><!-- Begin BidVertiser code --><script data-cfasync="false" src="//bdv.bidvertiser.com/BidVertiser.dbm?pid=943167&bid=${bid}" type="text/javascript"></script><!-- End BidVertiser code --></body></html>`;
+
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      aria-label="Advertisement"
+      style={{ minHeight: height }}
+    >
+      <div
+        className="mx-auto overflow-hidden"
+        style={{ width, height, maxWidth: "100%" }}
+      >
+        {shouldLoad ? (
+          <iframe
+            title="Advertisement"
+            srcDoc={adDocument}
+            width={width}
+            height={height}
+            scrolling="no"
+            frameBorder="0"
+            sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms"
+            style={{ display: "block", width, height, border: 0 }}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [sessionAddress, setSessionAddress] = useState<string | null>(
@@ -347,6 +433,19 @@ export default function Home() {
       <Header />
 
       <main className="flex-1 w-full">
+        {/* ── Desktop leaderboard ad ─────────────────────────────── */}
+        <section className="hidden md:block bg-background px-5 sm:px-8 pt-4">
+          <div className="max-w-3xl mx-auto">
+            <LazyBidVertiserAd
+              bid={2106726}
+              width={728}
+              height={90}
+              className="hidden md:block"
+              mediaQuery="(min-width: 768px)"
+            />
+          </div>
+        </section>
+
         {/* ── Hero zone ──────────────────────────────────────────── */}
         <section className="bg-background px-5 sm:px-8 pt-12 pb-10 sm:pt-16 sm:pb-14">
           <div className="max-w-3xl mx-auto flex flex-col items-center">
@@ -456,27 +555,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Support notice ───────────────────────────────────── */}
-        <section className="bg-background px-5 sm:px-8 py-2">
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-card border border-border/40 rounded-2xl px-5 py-4 text-center">
-              <p className="text-sm sm:text-base font-body text-foreground inline-flex flex-wrap items-center justify-center gap-1.5">
-                <Heart className="w-4 h-4 text-primary fill-primary shrink-0 animate-heartbeat motion-reduce:animate-none" strokeWidth={1.5} aria-hidden="true" />
-                <span>Love Ghist? Help keep it free</span>
-                <span aria-hidden="true">→</span>
-                <a
-                  href="https://omg10.com/4/11515151"
-                  target="_blank"
-                  rel="noopener noreferrer sponsored"
-                  className="font-semibold text-primary hover:underline underline-offset-2"
-                >
-                  View sponsor ads
-                </a>
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* ── Privacy notice ────────────────────────────────────── */}
         <section className="bg-muted/10 px-5 sm:px-8 py-5">
           <div className="max-w-3xl mx-auto">
@@ -487,6 +565,17 @@ export default function Home() {
               </p>
             </div>
           </div>
+        </section>
+
+        {/* ── Mobile rectangle ad ───────────────────────────────── */}
+        <section className="block md:hidden bg-background px-5 py-4">
+          <LazyBidVertiserAd
+            bid={2106729}
+            width={300}
+            height={250}
+            className="block md:hidden"
+            mediaQuery="(max-width: 767px)"
+          />
         </section>
 
         {/* ── Trust stats ────────────────────────────────────── */}
@@ -578,24 +667,16 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Support notice (2nd placement, above blog) ─────────────── */}
-        <section className="bg-background px-5 sm:px-8 py-2">
+        {/* ── Desktop leaderboard ad above blog ─────────────────── */}
+        <section className="hidden md:block bg-background px-5 sm:px-8 py-4">
           <div className="max-w-3xl mx-auto">
-            <div className="bg-card border border-border/40 rounded-2xl px-5 py-4 text-center">
-              <p className="text-sm sm:text-base font-body text-foreground inline-flex flex-wrap items-center justify-center gap-1.5">
-                <Heart className="w-4 h-4 text-primary fill-primary shrink-0 animate-heartbeat motion-reduce:animate-none" strokeWidth={1.5} aria-hidden="true" />
-                <span>Love Ghist? Help keep it free</span>
-                <span aria-hidden="true">→</span>
-                <a
-                  href="https://omg10.com/4/11515151"
-                  target="_blank"
-                  rel="noopener noreferrer sponsored"
-                  className="font-semibold text-primary hover:underline underline-offset-2"
-                >
-                  View sponsor ads
-                </a>
-              </p>
-            </div>
+            <LazyBidVertiserAd
+              bid={2106728}
+              width={728}
+              height={90}
+              className="hidden md:block"
+              mediaQuery="(min-width: 768px)"
+            />
           </div>
         </section>
 
