@@ -61,7 +61,7 @@ export const GhistAffiliatePill: React.FC = () => {
         className="group flex flex-col sm:flex-row sm:justify-center items-center w-full gap-x-2 gap-y-1.5 px-5 py-3.5 sm:py-3 rounded-2xl bg-card border border-card-border hover:border-primary/40 transition-all duration-150 text-center"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <Heart className="w-4 h-4 shrink-0 text-primary fill-primary" aria-hidden="true" />
+          <Heart className="w-4 h-4 shrink-0 text-primary fill-primary animate-heartbeat" aria-hidden="true" />
           <span className="text-sm text-foreground/90 font-bold">
             {ad.hook}
           </span>
