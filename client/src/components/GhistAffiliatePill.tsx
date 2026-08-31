@@ -52,22 +52,22 @@ export const GhistAffiliatePill: React.FC = () => {
   if (!ad) return null;
 
   return (
-    <div className="w-full max-w-xl mx-auto my-3 px-2">
+    <div className="w-full max-w-2xl mx-auto my-3 px-2">
       <a
         href={ad.url}
         target="_blank"
         rel="noopener noreferrer sponsored"
-        className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 px-3.5 py-2.5 rounded-2xl bg-card border border-card-border hover:border-primary/40 transition-all duration-150"
+        className="group flex flex-col sm:inline-flex sm:flex-row sm:items-center sm:flex-wrap w-full sm:w-auto gap-x-2 gap-y-1 px-5 py-3 rounded-2xl sm:rounded-full bg-card border border-card-border hover:border-primary/40 transition-all duration-150"
       >
-        <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto overflow-hidden">
+        <span className="flex items-center gap-2 min-w-0">
           <span className="shrink-0 text-sm">💙</span>
-          <span className="text-xs sm:text-sm text-foreground/80 font-normal truncate">
+          <span className="text-sm text-foreground/90 font-normal">
             {ad.hook}
           </span>
-        </div>
-        <span className="shrink-0 text-xs sm:text-sm font-medium text-primary group-hover:underline flex items-center gap-0.5 whitespace-nowrap self-end sm:self-auto">
+        </span>
+        <span className="flex items-center gap-1.5 text-sm font-medium text-primary group-hover:underline pl-7 sm:pl-0">
+          <span aria-hidden="true">→</span>
           <span>{ad.cta}</span>
-          <span className="text-[11px] opacity-70">↗</span>
         </span>
       </a>
     </div>
