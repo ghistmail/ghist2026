@@ -5,6 +5,7 @@ import { Link, useParams } from "wouter";
 import { ArrowLeft, Clock, Tag, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getBlogPostBySlug } from "@/lib/blogData";
+import { GhistAffiliatePill } from "@/components/GhistAffiliatePill";
 import { useLocale, t } from "@/lib/i18n";
 import { useEffect } from "react";
 
@@ -206,6 +207,9 @@ export default function BlogPost() {
           />
         </div>
 
+        {/* Affiliate pill */}
+        <GhistAffiliatePill />
+
         {/* Post body — subheadings bolded, bullet items grouped, mid-article image injected */}
         <div
           className="space-y-4 text-sm text-foreground/80 leading-relaxed"
@@ -328,6 +332,9 @@ export default function BlogPost() {
             return elements;
           })()}
         </div>
+
+        {/* Affiliate pill */}
+        <GhistAffiliatePill />
 
         {/* Footer CTA */}
         <div className="rounded-lg border border-border/50 bg-muted/20 p-5 space-y-3 mt-8">
