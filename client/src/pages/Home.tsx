@@ -471,7 +471,9 @@ export default function Home() {
 
         {/* ── Affiliate pill ─────────────────────────────────── */}
         <section className="bg-background px-5 sm:px-8 py-4">
-          <GhistAffiliatePill />
+          <div className="max-w-3xl mx-auto">
+            <GhistAffiliatePill />
+          </div>
         </section>
 
         {/* ── Trust stats ────────────────────────────────────── */}
@@ -565,7 +567,9 @@ export default function Home() {
 
         {/* ── Affiliate pill above blog ──────────────────────────── */}
         <section className="bg-background px-5 sm:px-8 py-4">
-          <GhistAffiliatePill />
+          <div className="max-w-3xl mx-auto">
+            <GhistAffiliatePill />
+          </div>
         </section>
 
         {/* ── Latest blogs section ────────────────────────────────────── */}

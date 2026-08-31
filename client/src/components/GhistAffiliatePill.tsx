@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Heart, ArrowRight } from 'lucide-react';
 
 interface AdVariation {
   hook: string;
@@ -52,21 +53,21 @@ export const GhistAffiliatePill: React.FC = () => {
   if (!ad) return null;
 
   return (
-    <div className="w-full max-w-2xl mx-auto my-3 px-2">
+    <div className="w-full my-3">
       <a
         href={ad.url}
         target="_blank"
         rel="noopener noreferrer sponsored"
-        className="group flex flex-col sm:inline-flex sm:flex-row sm:items-center sm:flex-wrap w-full sm:w-auto gap-x-2 gap-y-1 px-5 py-3 rounded-2xl sm:rounded-full bg-card border border-card-border hover:border-primary/40 transition-all duration-150"
+        className="group flex flex-col sm:flex-row sm:justify-center items-center w-full gap-x-2 gap-y-1.5 px-5 py-3.5 sm:py-3 rounded-2xl bg-card border border-card-border hover:border-primary/40 transition-all duration-150 text-center"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="shrink-0 text-sm">💙</span>
+          <Heart className="w-4 h-4 shrink-0 text-primary fill-primary" aria-hidden="true" />
           <span className="text-sm text-foreground/90 font-normal">
             {ad.hook}
           </span>
         </span>
-        <span className="flex items-center gap-1.5 text-sm font-medium text-primary group-hover:underline pl-7 sm:pl-0">
-          <span aria-hidden="true">→</span>
+        <span className="flex items-center gap-1.5 text-sm font-medium text-primary group-hover:underline">
+          <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
           <span>{ad.cta}</span>
         </span>
       </a>
