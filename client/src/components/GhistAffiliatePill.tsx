@@ -57,15 +57,15 @@ export const GhistAffiliatePill: React.FC = () => {
         href={ad.url}
         target="_blank"
         rel="noopener noreferrer sponsored"
-        className="group flex flex-row items-center justify-between gap-2 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-all duration-150"
+        className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 px-3.5 py-2.5 rounded-2xl bg-card border border-card-border hover:border-primary/40 transition-all duration-150"
       >
-        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+        <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto overflow-hidden">
           <span className="shrink-0 text-sm">💙</span>
-          <span className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 font-normal truncate">
+          <span className="text-xs sm:text-sm text-foreground/80 font-normal truncate">
             {ad.hook}
           </span>
         </div>
-        <span className="shrink-0 text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:underline flex items-center gap-0.5 whitespace-nowrap">
+        <span className="shrink-0 text-xs sm:text-sm font-medium text-primary group-hover:underline flex items-center gap-0.5 whitespace-nowrap self-end sm:self-auto">
           <span>{ad.cta}</span>
           <span className="text-[11px] opacity-70">↗</span>
         </span>
