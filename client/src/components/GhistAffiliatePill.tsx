@@ -5,10 +5,10 @@ interface AdVariation {
   hook: string;
   cta: string;
   url: string;
-  category: 'privacy' | 'travel' | 'home';
+  category: 'privacy' | 'travel' | 'home' | 'desk';
 }
 
-const AD_INVENTORY: Record<'privacy' | 'travel' | 'home', AdVariation[]> = {
+const AD_INVENTORY: Record<'privacy' | 'travel' | 'home' | 'desk', AdVariation[]> = {
   privacy: [
     { hook: "Your email is temporary. Keep logins safe.", cta: "See 2FA security keys", url: "https://amzn.to/4qNlaT4", category: "privacy" },
     { hook: "Every signup shares more than you think.", cta: "Shop privacy gear", url: "https://amzn.to/4qNlaT4", category: "privacy" },
@@ -26,6 +26,13 @@ const AD_INVENTORY: Record<'privacy' | 'travel' | 'home', AdVariation[]> = {
     { hook: "One weak device can expose your network.", cta: "Secure your home", url: "https://a.co/d/033jIyUo", category: "home" },
     { hook: "Take control of backups and privacy.", cta: "Shop private storage", url: "https://a.co/d/033jIyUo", category: "home" },
     { hook: "Your smart home shouldn't be an open door.", cta: "Lock it down", url: "https://a.co/d/033jIyUo", category: "home" }
+  ],
+  desk: [
+    { hook: "Tired of a Messy Desk?", cta: "Clean Up Your Workspace", url: "https://www.amazon.com/shop/sobasogo/list/1OKLXOBB52CCI?ref_=aip_sf_list_spv_ons_mixed_d", category: "desk" },
+    { hook: "Minimalist WFH Desk", cta: "Shop our curated Setup", url: "https://www.amazon.com/shop/sobasogo/list/1OKLXOBB52CCI?ref_=aip_sf_list_spv_ons_mixed_d", category: "desk" },
+    { hook: "Home Office Checklist", cta: "Shop Every Essential", url: "https://www.amazon.com/shop/sobasogo/list/1OKLXOBB52CCI?ref_=aip_sf_list_spv_ons_mixed_d", category: "desk" },
+    { hook: "Desk Setup Stuck in 2020?", cta: "Upgrade From $20", url: "https://www.amazon.com/shop/sobasogo/list/1OKLXOBB52CCI?ref_=aip_sf_list_spv_ons_mixed_d", category: "desk" },
+    { hook: "Cables Everywhere?", cta: "Hide Them for Under $25", url: "https://www.amazon.com/shop/sobasogo/list/1OKLXOBB52CCI?ref_=aip_sf_list_spv_ons_mixed_d", category: "desk" }
   ]
 };
 
@@ -33,12 +40,14 @@ export const GhistAffiliatePill: React.FC = () => {
   const [ad, setAd] = useState<AdVariation | null>(null);
 
   useEffect(() => {
-    // 50% Privacy, 35% Travel, 15% Home
+    // 40% Privacy, 25% Desk, 20% Travel, 15% Home
     const rand = Math.random() * 100;
-    let category: 'privacy' | 'travel' | 'home' = 'privacy';
+    let category: 'privacy' | 'travel' | 'home' | 'desk' = 'privacy';
 
-    if (rand < 50) {
+    if (rand < 40) {
       category = 'privacy';
+    } else if (rand < 65) {
+      category = 'desk';
     } else if (rand < 85) {
       category = 'travel';
     } else {
