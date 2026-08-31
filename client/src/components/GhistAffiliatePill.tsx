@@ -62,11 +62,11 @@ export const GhistAffiliatePill: React.FC = () => {
       >
         <span className="flex items-center gap-2 min-w-0">
           <Heart className="w-4 h-4 shrink-0 text-primary fill-primary" aria-hidden="true" />
-          <span className="text-sm text-foreground/90 font-normal">
+          <span className="text-sm text-foreground/90 font-bold">
             {ad.hook}
           </span>
         </span>
-        <span className="flex items-center gap-1.5 text-sm font-medium text-primary group-hover:underline">
+        <span className="flex items-center gap-1.5 text-sm font-bold text-primary group-hover:underline">
           <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
           <span>{ad.cta}</span>
         </span>
