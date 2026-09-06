@@ -125,7 +125,7 @@ const translations: Record<Locale, Translations> = {
     about: {
       title: "About Ghist",
       description: "Ghist is a free disposable email service built for privacy-conscious users who want to protect their real inbox from spam and tracking.",
-      mission: "Our mission is to make privacy simple and accessible — a temporary email in seconds, no account needed, nothing stored.",
+      mission: "Our mission is to make privacy simple and accessible — a temporary email in seconds, no account needed. Messages are temporarily stored for up to 24 hours, then permanently deleted.",
       values: "We believe in minimal data collection, full transparency, and ephemeral-by-design architecture.",
     },
     faq: {
@@ -137,7 +137,7 @@ const translations: Record<Locale, Translations> = {
         { q: "Do I need to create an account?", a: "No. Ghist generates a temporary email address the moment you open the site. No account, no password, no personal information required." },
         { q: "Is Ghist safe for verification codes and OTPs?", a: "Yes. Ghist uses TLS 1.3 encryption and sessions are isolated — your temporary address is never linked to your real identity. It is ideal for receiving one-time passwords and verification links." },
         { q: "What is Ghist useful for?", a: "Ghist is useful for signing up for free trials without receiving spam, downloading gated content, receiving verification codes, claiming promo codes, and any situation where you need a temporary email address without exposing your real inbox." },
-        { q: "Does Ghist store or sell my data?", a: "No. Ghist does not require any personal information, does not track users, and permanently deletes all emails after 24 hours. There is nothing to store or sell." },
+        { q: "Does Ghist store or sell my data?", a: "No. Ghist does not require any personal information, does not track users, and permanently deletes all emails after 24 hours. Messages are temporarily stored for up to 24 hours, then permanently deleted." },
         { q: "What happens to my emails after 24 hours?", a: "All emails and the temporary email address itself are permanently and irrecoverably deleted after 24 hours. This is by design — Ghist is ephemeral by architecture." },
         { q: "Can I send emails from a Ghist address?", a: "No. Ghist is a receive-only service. You can only receive emails, not send them. This prevents misuse for spam or phishing." },
         { q: "Can I choose my own email address?", a: "Currently, Ghist generates a random address automatically. Custom addresses are not supported — this is intentional to keep the service anonymous and fast." },

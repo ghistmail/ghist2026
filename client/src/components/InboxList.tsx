@@ -132,7 +132,7 @@ function EmptyInbox() {
         </span>
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-body font-medium bg-secondary text-muted-foreground">
           <span className="w-1.5 h-1.5 rounded-full bg-primary live-dot" />
-          End-to-end
+          Encrypted in transit
         </span>
       </div>
     </div>
