@@ -26,6 +26,8 @@ function AppRouter() {
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/contact" component={Contact} />
+      {/* Private recovery link — reopens a specific inbox by its unguessable token, from any tab/browser */}
+      <Route path="/inbox/:token" component={Home} />
       {/* Locale-prefixed variants — same pages, locale read from __GHIST_LOCALE__ or hash prefix */}
       <Route path="/:locale/privacy" component={Privacy} />
       <Route path="/:locale/terms" component={Terms} />
@@ -34,6 +36,7 @@ function AppRouter() {
       <Route path="/:locale/blog" component={Blog} />
       <Route path="/:locale/blog/:slug" component={BlogPost} />
       <Route path="/:locale/contact" component={Contact} />
+      <Route path="/:locale/inbox/:token" component={Home} />
       <Route path="/:locale" component={Home} />
       <Route component={NotFound} />
     </Switch>

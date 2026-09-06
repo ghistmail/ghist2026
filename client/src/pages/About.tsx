@@ -53,7 +53,7 @@ export default function About() {
               <Shield className="w-5 h-5 text-muted-foreground" />
               <h3 className="text-sm font-medium text-foreground">Privacy first</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                No accounts, no tracking, no personal data ever required.
+                No accounts or personal data ever required. This site uses Google Analytics, Google AdSense, and tracked Amazon affiliate links.
               </p>
             </div>
             <div className="rounded-lg border border-border/50 bg-muted/20 p-4 space-y-2">

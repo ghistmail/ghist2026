@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Copy, Check, RefreshCw, Clock } from "lucide-react";
+import { Copy, Check, RefreshCw, Clock, KeyRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface EmailAddressProps {
@@ -11,6 +11,8 @@ interface EmailAddressProps {
   onExpired: () => void;
   /** Called once per unique address when user first copies it. */
   onFirstCopy?: () => void;
+  /** Private recovery token for this inbox, if one has been registered. */
+  recoveryToken?: string | null;
 }
 
 /** Inline countdown — "23:59:39" or "59m 12s" when urgent */
@@ -94,14 +96,39 @@ export function EmailAddress({
   isGenerating,
   onExpired,
   onFirstCopy,
+  recoveryToken,
 }: EmailAddressProps) {
   const [copied, setCopied] = useState(false);
+  const [copiedRecovery, setCopiedRecovery] = useState(false);
   const [flashKey, setFlashKey] = useState(0);
   const [revealKey, setRevealKey] = useState(0);
   const prevAddress = useRef(address);
   // Track which addresses have already been counted to prevent double-count
   const copiedAddresses = useRef(new Set<string>());
   const { toast } = useToast();
+
+  const recoveryUrl =
+    recoveryToken && typeof window !== "undefined"
+      ? `${window.location.origin}/inbox/${recoveryToken}`
+      : null;
+
+  const handleCopyRecovery = async () => {
+    if (!recoveryUrl) return;
+    try {
+      await navigator.clipboard.writeText(recoveryUrl);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = recoveryUrl;
+      ta.style.cssText = "position:fixed;left:-9999px;top:-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopiedRecovery(true);
+    toast({ title: "Recovery link copied" });
+    setTimeout(() => setCopiedRecovery(false), 1500);
+  };
 
   useEffect(() => {
     if (address !== prevAddress.current) {
@@ -213,6 +240,49 @@ export function EmailAddress({
             <span>Generate new</span>
           </button>
         </div>
+
+        {/* Recovery link — lets the user reopen this exact inbox from a new tab or browser */}
+        {recoveryUrl && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 px-4 py-3 rounded-xl border border-border/60 bg-muted/30">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <KeyRound className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0 text-left">
+                <p className="text-xs font-semibold text-foreground font-body">Recovery link</p>
+                <p
+                  className="text-xs text-muted-foreground font-mono truncate"
+                  style={{ fontFamily: "'Geist Mono', 'JetBrains Mono', monospace" }}
+                  data-testid="text-recovery-link"
+                  title={recoveryUrl}
+                >
+                  {recoveryUrl}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleCopyRecovery}
+              data-testid="button-copy-recovery"
+              aria-label="Copy recovery link"
+              className={`
+                flex items-center justify-center gap-2
+                px-4 py-2 rounded-lg
+                font-body font-semibold text-sm
+                shrink-0
+                transition-all duration-150
+                ${copiedRecovery
+                  ? "bg-green-500/20 text-green-500"
+                  : "bg-secondary hover:bg-secondary/80 text-foreground"
+                }
+              `}
+            >
+              {copiedRecovery ? (
+                <Check className="w-4 h-4 shrink-0" />
+              ) : (
+                <Copy className="w-4 h-4 shrink-0" />
+              )}
+              <span>{copiedRecovery ? "Copied!" : "Copy link"}</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ const BASE = "https://ghist.email";
 const ROUTE_META: Record<string, RouteMeta> = {
   "/": {
     title: "Free Temporary Email Address | Ghist — Instant & Anonymous",
-    description: "Get a free disposable email address in seconds — no sign-up, no tracking. Perfect for free trials, OTPs, and avoiding spam. Permanently deleted after 24 hours.",
+    description: "Get a free disposable email address in seconds — no sign-up. Perfect for free trials, OTPs, and avoiding spam. Permanently deleted after 24 hours.",
     canonical: `${BASE}/`,
   },
   "/faq": {
@@ -72,7 +72,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   // English locale prefix (same content as root, different canonical)
   "/en": {
     title: "Free Temporary Email Address | Ghist — Instant & Anonymous",
-    description: "Get a free disposable email address in seconds — no sign-up, no tracking. Permanently deleted after 24 hours.",
+    description: "Get a free disposable email address in seconds — no sign-up. Permanently deleted after 24 hours.",
     canonical: `${BASE}/en`,
   },
   "/en/faq": {

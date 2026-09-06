@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link } from "wouter";
+import { Link, useRoute } from "wouter";
 import { getSortedBlogPosts } from "@/lib/blogData";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -24,11 +24,13 @@ const TTL_MS = 24 * 60 * 60 * 1000;
 // Session address — persisted to sessionStorage so refresh/idle doesn't lose the inbox
 const SESSION_KEY = "ghist_session";
 
-function loadSession(): { address: string; expiresAt: string } | null {
+type SavedSession = { address: string; expiresAt: string; recoveryToken?: string };
+
+function loadSession(): SavedSession | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { address: string; expiresAt: string };
+    const parsed = JSON.parse(raw) as SavedSession;
     // Discard if already expired
     if (new Date(parsed.expiresAt).getTime() <= Date.now()) {
       sessionStorage.removeItem(SESSION_KEY);
@@ -38,12 +40,40 @@ function loadSession(): { address: string; expiresAt: string } | null {
   } catch { return null; }
 }
 
-function saveSession(address: string, expiresAt: string) {
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ address, expiresAt })); } catch {}
+function saveSession(address: string, expiresAt: string, recoveryToken?: string | null) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ address, expiresAt, recoveryToken: recoveryToken ?? undefined })); } catch {}
 }
 
 function clearSession() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+}
+
+// Register a brand-new inbox with the server so it can be reopened later
+// from any tab/browser via a private recovery link. Best-effort — if this
+// fails (e.g. transient network issue) the inbox still works normally,
+// it just won't have a recovery link until the next "Generate new".
+async function registerRecoveryToken(address: string, expiresAt: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/recover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, expiresAt }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { token?: string };
+    return data.token ?? null;
+  } catch { return null; }
+}
+
+// Resolve a recovery token (from an /inbox/:token URL) back to its address.
+async function resolveRecoveryToken(token: string): Promise<{ address: string; expiresAt: string } | null> {
+  try {
+    const res = await fetch(`/api/recover/${encodeURIComponent(token)}`);
+    if (!res.ok) return null;
+    const data = (await res.json()) as { address: string; expiresAt: string };
+    if (new Date(data.expiresAt).getTime() <= Date.now()) return null;
+    return data;
+  } catch { return null; }
 }
 
 // NOTE: sessionAddress/mailbox used to live only in the react-query cache,
@@ -126,10 +156,21 @@ function mapMessage(m: any, mailboxAddress: string): Message {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  // Detect an incoming recovery link, e.g. /inbox/<token> or /en/inbox/<token>
+  const [matchedInboxRoute, inboxRouteParams] = useRoute("/inbox/:token");
+  const [matchedLocaleInboxRoute, localeInboxRouteParams] = useRoute("/:locale/inbox/:token");
+  const urlRecoveryToken =
+    (matchedInboxRoute ? inboxRouteParams?.token : null) ??
+    (matchedLocaleInboxRoute ? localeInboxRouteParams?.token : null) ??
+    null;
+
   const [sessionAddress, setSessionAddress] = useState<string | null>(
     () => (_saved ? _saved.address : null)
   );
   const [mailbox, setMailbox] = useState<Mailbox | null>(null);
+  const [recoveryToken, setRecoveryToken] = useState<string | null>(
+    () => _saved?.recoveryToken ?? null
+  );
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | undefined>(undefined);
@@ -144,13 +185,24 @@ export default function Home() {
       body: JSON.stringify({ event, count }),
     }).then(() => {}).catch(() => {});
 
-  // Create mailbox — purely client-side, no server call needed
+  // Create mailbox — built client-side; a recovery token is registered
+  // with the server for brand-new inboxes so they can be reopened later
+  // from any tab or browser (restores that already carry a known token,
+  // e.g. from sessionStorage or a resolved recovery link, reuse it as-is).
   const createMailbox = useMutation({
-    mutationFn: async (opts?: { restore: { address: string; expiresAt: string } }) =>
-      buildMailbox(opts?.restore),
+    mutationFn: async (opts?: { restore?: { address: string; expiresAt: string; recoveryToken?: string | null } }) => {
+      const built = buildMailbox(opts?.restore);
+      let token = opts?.restore?.recoveryToken ?? null;
+      if (!token) {
+        token = await registerRecoveryToken(built.address, built.expiresAt);
+      }
+      saveSession(built.address, built.expiresAt, token);
+      return { ...built, recoveryToken: token } as Mailbox & { recoveryToken: string | null };
+    },
     onSuccess: (data) => {
       setSessionAddress(data.address);
       setMailbox(data);
+      setRecoveryToken(data.recoveryToken ?? null);
       setSelectedMessageId(null);
       setExpired(false);
       setBottomSheetOpen(false);
@@ -222,6 +274,10 @@ export default function Home() {
         `${WORKER_BASE}/api/inbox?email=${encodeURIComponent(sessionAddress)}`,
         { method: "DELETE" }
       );
+      // Invalidate the recovery link too, so it stops resolving right away
+      if (recoveryToken) {
+        fetch(`/api/recover/${encodeURIComponent(recoveryToken)}`, { method: "DELETE" }).catch(() => {});
+      }
     },
     onSuccess: async () => {
       await trackEvent("inbox_deleted");
@@ -229,6 +285,7 @@ export default function Home() {
       clearSession();
       setSessionAddress(null);
       setMailbox(null);
+      setRecoveryToken(null);
       setSelectedMessageId(null);
       setExpired(false);
       setBottomSheetOpen(false);
@@ -236,19 +293,34 @@ export default function Home() {
     },
   });
 
-  // Auto-create on first load — restore saved session if valid, otherwise create fresh
+  // Auto-create on first load — a recovery link in the URL takes priority
+  // over everything else; otherwise restore the saved session if valid, or
+  // create a fresh inbox exactly as before (unchanged for plain visits).
   useEffect(() => {
-    if (!sessionAddress && !createMailbox.isPending) {
-      createMailbox.mutate();
-    } else if (sessionAddress && !createMailbox.isPending) {
-      const saved = loadSession();
-      if (saved) {
-        createMailbox.mutate({ restore: saved });
-      } else {
-        setSessionAddress(null);
+    async function init() {
+      if (urlRecoveryToken && !createMailbox.isPending) {
+        const resolved = await resolveRecoveryToken(urlRecoveryToken);
+        if (resolved) {
+          createMailbox.mutate({
+            restore: { address: resolved.address, expiresAt: resolved.expiresAt, recoveryToken: urlRecoveryToken },
+          });
+          return;
+        }
+        // Invalid/expired token — fall through to normal flow below
+      }
+      if (!sessionAddress && !createMailbox.isPending) {
         createMailbox.mutate();
+      } else if (sessionAddress && !createMailbox.isPending) {
+        const saved = loadSession();
+        if (saved) {
+          createMailbox.mutate({ restore: saved });
+        } else {
+          setSessionAddress(null);
+          createMailbox.mutate();
+        }
       }
     }
+    init();
   }, []);
 
   const handleGenerate = useCallback(() => {
@@ -375,6 +447,7 @@ export default function Home() {
                 onDelete={handleDelete}
                 isGenerating={createMailbox.isPending}
                 onExpired={handleExpired}
+                recoveryToken={recoveryToken}
               />
             ) : null}
           </div>

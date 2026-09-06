@@ -340,7 +340,7 @@ export default function BlogPost() {
         <div className="rounded-lg border border-border/50 bg-muted/20 p-5 space-y-3 mt-8">
           <p className="text-sm font-medium text-foreground">Ready to protect your inbox?</p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Ghist gives you a free temporary email address instantly — no sign-up, no tracking.
+            Ghist gives you a free temporary email address instantly — no sign-up.
             Auto-deleted after 24 hours.
           </p>
           <Link href="/">

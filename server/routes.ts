@@ -163,6 +163,17 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// ============================================================
+// Recovery links — the client generates disposable inbox addresses
+// entirely client-side (word-pair + Worker backend) and keeps the
+// active address in sessionStorage, which is scoped to a single tab.
+// This map lets a user reopen the exact same inbox from any tab or
+// browser via a private, unguessable token instead of the address
+// itself (the address space is small and guessable; this token is
+// not). In-memory only — does not survive a server restart/redeploy.
+// ============================================================
+const recoveryMap = new Map<string, { address: string; expiresAt: string }>();
+
 // Cleanup expired mailboxes every 2 minutes
 setInterval(async () => {
   const expired = await storage.getExpiredMailboxes();
@@ -183,6 +194,10 @@ setInterval(async () => {
   const now = Date.now();
   for (const [ip, entry] of rateLimitMap) {
     if (now > entry.resetAt) rateLimitMap.delete(ip);
+  }
+  // Clean expired recovery links
+  for (const [token, entry] of recoveryMap) {
+    if (now > new Date(entry.expiresAt).getTime()) recoveryMap.delete(token);
   }
 }, 120000);
 
@@ -243,6 +258,40 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // Register a recovery token for a client-generated inbox (word-pair
+  // address created by the Worker-backed flow in Home.tsx). Returns a
+  // private, unguessable token that resolves back to this exact address
+  // from any tab or browser, independent of sessionStorage.
+  app.post("/api/recover", (req: Request, res: Response) => {
+    const { address, expiresAt } = req.body ?? {};
+    if (typeof address !== "string" || !address || typeof expiresAt !== "string") {
+      return res.status(400).json({ error: "address and expiresAt are required" });
+    }
+    if (new Date(expiresAt).getTime() <= Date.now()) {
+      return res.status(400).json({ error: "expiresAt must be in the future" });
+    }
+    const token = randomUUID();
+    recoveryMap.set(token, { address, expiresAt });
+    res.json({ token });
+  });
+
+  // Resolve a recovery token back to its inbox address + expiry.
+  app.get("/api/recover/:token", (req: Request, res: Response) => {
+    const entry = recoveryMap.get(req.params.token);
+    if (!entry || new Date(entry.expiresAt).getTime() <= Date.now()) {
+      if (entry) recoveryMap.delete(req.params.token);
+      return res.status(404).json({ error: "Recovery link not found or expired" });
+    }
+    res.json(entry);
+  });
+
+  // Invalidate a recovery token (called when the user explicitly deletes
+  // their inbox, so the old link stops resolving right away).
+  app.delete("/api/recover/:token", (req: Request, res: Response) => {
+    recoveryMap.delete(req.params.token);
+    res.status(204).send();
+  });
 
   // Create a new mailbox — tries Guerrilla Mail first, falls back to mail.tm
   app.post("/api/mailbox", async (req: Request, res: Response) => {
@@ -710,11 +759,11 @@ export async function registerRoutes(
   const PAGE_META: Record<string, (locale: string) => { title: string; description: string }> = {
     home: (locale) => ({
       title: locale === "en" ? "Free Temporary Email Address | Ghist — Instant & Anonymous" : `Ghist — Free Temporary Email (${locale.toUpperCase()})`,
-      description: "Get a free disposable email address in seconds — no sign-up, no tracking. Perfect for free trials, OTPs, and avoiding spam. Permanently deleted after 24 hours.",
+      description: "Get a free disposable email address in seconds — no sign-up. Perfect for free trials, OTPs, and avoiding spam. Permanently deleted after 24 hours.",
     }),
     privacy: (locale) => ({
       title: `Privacy Policy — Ghist`,
-      description: "Read Ghist's privacy policy. We collect minimal data, store nothing beyond 24 hours, and never track users.",
+      description: "Read Ghist's privacy policy. We collect minimal data and store nothing beyond 24 hours.",
     }),
     terms: (locale) => ({
       title: `Terms of Service — Ghist`,
@@ -722,7 +771,7 @@ export async function registerRoutes(
     }),
     about: (locale) => ({
       title: `About Ghist — Free Disposable Email`,
-      description: "Learn about Ghist: a free disposable email service built for privacy. No sign-up, no tracking, auto-deleted after 24 hours.",
+      description: "Learn about Ghist: a free disposable email service built for privacy. No sign-up, auto-deleted after 24 hours.",
     }),
     faq: (locale) => ({
       title: `FAQ — Ghist Temporary Email`,
