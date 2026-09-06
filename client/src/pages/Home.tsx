@@ -310,7 +310,15 @@ export default function Home() {
           });
           return;
         }
-        // Invalid/expired token — fall through to normal flow below
+        // Invalid/expired token (e.g. the server restarted since it was issued,
+        // which clears the in-memory recovery map) — tell the user why they're
+        // not getting their old inbox back, instead of silently swapping them
+        // to a new one with no explanation.
+        toast({
+          title: "That reopen link doesn't work anymore",
+          description: "It expired or the inbox behind it is gone. Here's a fresh inbox instead.",
+          variant: "destructive",
+        });
       }
       if (!sessionAddress && !createMailbox.isPending) {
         createMailbox.mutate();
