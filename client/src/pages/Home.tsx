@@ -560,8 +560,8 @@ export default function Home() {
               <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-muted/20">
                 <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-foreground font-body">Reopen this inbox</p>
-                  <p className="text-[11px] text-muted-foreground font-body">Bookmark this link to check mail again later</p>
+                  <p className="text-xs font-medium text-foreground font-body">Save inbox link</p>
+                  <p className="text-[11px] text-muted-foreground font-body">Check your mail again later.</p>
                   <p
                     className="text-[11px] text-muted-foreground font-mono break-all mt-0.5"
                     style={{ fontFamily: "'Geist Mono', 'JetBrains Mono', monospace" }}
