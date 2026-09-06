@@ -177,12 +177,14 @@ export function EmailAddress({
         {/* Main pill row */}
         <div
           key={flashKey}
-          className={`flex items-stretch w-full rounded-2xl overflow-hidden border border-border bg-card ${flashKey > 0 ? "copy-flash" : ""}`}
+          className={`flex flex-col sm:flex-row sm:items-stretch w-full rounded-2xl overflow-hidden border border-border bg-card ${flashKey > 0 ? "copy-flash" : ""}`}
         >
-          {/* Address side */}
-          <div className="flex-1 flex items-center px-5 py-4 min-w-0">
+          {/* Address side — own row on mobile (below sm) so the copy button never
+              crowds it out of width; break-words is a backstop for any
+              unusually long address/domain combo even on its own line. */}
+          <div className="flex-1 flex items-center px-5 py-4 min-w-0 w-full">
             <span
-              className="font-mono text-lg sm:text-xl font-semibold text-foreground truncate"
+              className="font-mono text-lg sm:text-xl font-semibold text-foreground break-words sm:truncate"
               style={{ fontFamily: "'Geist Mono', 'JetBrains Mono', monospace" }}
               data-testid="text-email-address"
               data-hero-address
@@ -197,10 +199,12 @@ export function EmailAddress({
             data-testid="button-copy"
             aria-label="Copy email address"
             className={`
-              flex items-center gap-2.5
+              flex items-center justify-center gap-2.5
+              w-full sm:w-auto
               px-6 py-4
               font-body font-semibold text-base
               shrink-0
+              border-t border-border sm:border-t-0
               transition-all duration-150
               ${copied
                 ? "bg-green-500/20 text-green-500"
