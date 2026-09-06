@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { incrementInboxes, incrementEmailsReceived, incrementMessagesDeleted, recordArrivalTime, getStats, recordCountryHit, getTopCountry } from "./stats";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import fs from "fs";
 import path from "path";
 import { Resend } from "resend";
@@ -174,6 +174,34 @@ function checkRateLimit(ip: string): boolean {
 // ============================================================
 const recoveryMap = new Map<string, { address: string; expiresAt: string }>();
 
+// 8-character mixed-case alphanumeric slug, generated from a cryptographically
+// secure random source (crypto.randomBytes — never Math.random). No
+// timestamps/counters/email-derived characters, so slugs are non-sequential
+// and non-guessable. Rejection-sampled per byte to avoid modulo bias, and
+// checked against active slugs in recoveryMap before use, regenerating on
+// collision.
+const RECOVERY_SLUG_ALPHABET =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const RECOVERY_SLUG_LENGTH = 8;
+
+function randomRecoverySlugChar(): string {
+  const alphabetSize = RECOVERY_SLUG_ALPHABET.length; // 62
+  const maxUnbiased = 256 - (256 % alphabetSize); // reject bytes >= this
+  let byte: number;
+  do {
+    byte = randomBytes(1)[0];
+  } while (byte >= maxUnbiased);
+  return RECOVERY_SLUG_ALPHABET[byte % alphabetSize];
+}
+
+function generateRecoverySlug(): string {
+  let slug: string;
+  do {
+    slug = Array.from({ length: RECOVERY_SLUG_LENGTH }, randomRecoverySlugChar).join("");
+  } while (recoveryMap.has(slug));
+  return slug;
+}
+
 // Cleanup expired mailboxes every 2 minutes
 setInterval(async () => {
   const expired = await storage.getExpiredMailboxes();
@@ -271,7 +299,7 @@ export async function registerRoutes(
     if (new Date(expiresAt).getTime() <= Date.now()) {
       return res.status(400).json({ error: "expiresAt must be in the future" });
     }
-    const token = randomUUID();
+    const token = generateRecoverySlug();
     recoveryMap.set(token, { address, expiresAt });
     res.json({ token });
   });

@@ -10,7 +10,9 @@ import { EmailAddress } from "@/components/EmailAddress";
 import { InboxList, EmailCardSkeleton } from "@/components/InboxList";
 import { MessageDetail } from "@/components/MessageDetail";
 import { Button } from "@/components/ui/button";
-import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2, Tag, MessageSquare, Wifi, Bot, KeyRound } from "lucide-react";
+import { Plus, AlertTriangle, Clock, Mail, EyeOff, X, LayoutTemplate, BarChart2, Tag, MessageSquare, Wifi, Bot, KeyRound, Link2, Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GhostLogo } from "@/components/GhostLogo";
 import { StatsBar } from "@/components/StatsBar";
@@ -171,6 +173,8 @@ export default function Home() {
   const [recoveryToken, setRecoveryToken] = useState<string | null>(
     () => _saved?.recoveryToken ?? null
   );
+  const [copiedRecoveryLink, setCopiedRecoveryLink] = useState(false);
+  const { toast } = useToast();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | undefined>(undefined);
@@ -415,6 +419,18 @@ export default function Home() {
 
   const isLoading = createMailbox.isPending || mailboxLoading;
 
+  const recoveryUrl =
+    recoveryToken && typeof window !== "undefined"
+      ? `${window.location.origin}/inbox/${recoveryToken}`
+      : null;
+  const handleCopyRecoveryLink = async () => {
+    if (!recoveryUrl) return;
+    await copyToClipboard(recoveryUrl);
+    setCopiedRecoveryLink(true);
+    toast({ title: "Recovery link copied" });
+    setTimeout(() => setCopiedRecoveryLink(false), 1500);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -447,7 +463,6 @@ export default function Home() {
                 onDelete={handleDelete}
                 isGenerating={createMailbox.isPending}
                 onExpired={handleExpired}
-                recoveryToken={recoveryToken}
               />
             ) : null}
           </div>
@@ -529,6 +544,41 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ── Reopen this inbox (recovery link) ─────────────────── */}
+        {recoveryUrl && (
+          <section className="bg-background px-5 sm:px-8 py-3">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-muted/20">
+                <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-foreground font-body">Reopen this inbox</p>
+                  <p className="text-[11px] text-muted-foreground font-body">Bookmark this link to check mail again later</p>
+                  <p
+                    className="text-[11px] text-muted-foreground font-mono break-all mt-0.5"
+                    style={{ fontFamily: "'Geist Mono', 'JetBrains Mono', monospace" }}
+                    data-testid="text-recovery-link"
+                  >
+                    {recoveryUrl}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCopyRecoveryLink}
+                  data-testid="button-copy-recovery"
+                  aria-label="Copy recovery link"
+                  className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] px-3 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors shrink-0"
+                >
+                  {copiedRecoveryLink ? (
+                    <Check className="w-3.5 h-3.5 shrink-0" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 shrink-0" />
+                  )}
+                  <span>{copiedRecoveryLink ? "Copied" : "Copy link"}</span>
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── Privacy notice ────────────────────────────────────── */}
         <section className="bg-muted/10 px-5 sm:px-8 py-5">
