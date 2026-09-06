@@ -22,7 +22,7 @@ function InlineCountdown({
   onExpired: () => void;
 }) {
   const [display, setDisplay] = useState("");
-  const [urgent, setUrgent] = useState(false);
+  const [urgencyState, setUrgencyState] = useState<"normal" | "warning" | "critical">("normal");
   const firedRef = useRef(false);
   // Keep latest onExpired in a ref so it never re-triggers the effect
   const onExpiredRef = useRef(onExpired);
@@ -37,7 +37,7 @@ function InlineCountdown({
       const diff = new Date(expiresAt).getTime() - Date.now();
       if (diff <= 0) {
         setDisplay("Expired");
-        setUrgent(true);
+        setUrgencyState("critical");
         if (!firedRef.current) {
           firedRef.current = true;
           onExpiredRef.current();
@@ -47,7 +47,8 @@ function InlineCountdown({
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
-      setUrgent(diff < 3600000);
+      // Normal: > 60min remaining · Warning: 60min down to 5min · Critical: < 5min
+      setUrgencyState(diff > 3600000 ? "normal" : diff > 300000 ? "warning" : "critical");
       setDisplay(
         `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
       );
@@ -59,8 +60,8 @@ function InlineCountdown({
 
   return (
     <span
-      className={`font-mono font-bold tabular-nums ${
-        urgent ? "text-destructive urgent-pulse" : "text-foreground"
+      className={`font-mono font-bold tabular-nums px-2 py-0.5 rounded-md transition-colors duration-300 countdown-${urgencyState} ${
+        urgencyState === "critical" ? "countdown-critical-pulse" : ""
       }`}
       style={{ fontFamily: "'Geist Mono', 'JetBrains Mono', monospace" }}
       data-testid="text-countdown"
